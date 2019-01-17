@@ -1,0 +1,47 @@
+<html>
+	<head>
+		<title>AAS Example</title>
+		<style>
+			#accessToken {
+				width: 100%;
+			}
+			#errordisplay {
+				color: red;
+			}
+			#token {
+				border-color: black;
+				border-style: solid;
+				border-width: 2px;
+			}
+			#sitesDiv {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="signinform">
+			<button type="button" type="button" id="dosignin">Signin</button>
+			<button type="button" type="button" id="dosignout">Signout</button>
+		</div>
+		<div id="userdisplay" style="display: none">
+			<b>User ID:</b> <span id="userId"></span><br/>
+			<b>Login:</b> <span id="userLogin"></span><br/>
+			<b>Name:</b> <span id="userName"></span>
+			<div id="token">
+				<button type="button" type="button" id="obtainToken">Obtain Token</button><br/>			
+				<b>Access Token:</b><br/><textarea id="accessToken" rows="5"></textarea>
+			</div>
+		</div>
+		<div id="errordisplay">
+			<span id="errorMessage"></span>
+		</div>
+		<div id="sitesDiv">
+			<h4>Sites:</h4>
+			<button type="button" type="button" id="sitesButton">Obtain Sites</button><br/>			
+			<textarea id="sitesList" rows="5"></textarea>
+		</div>
+	</body>
+	<script src="https://secure.aadcdn.microsoftonline-p.com/lib/1.0.16/js/adal.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="index.js"></script>		
+</html>

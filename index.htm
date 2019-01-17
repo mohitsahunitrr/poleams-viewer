@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>PrecisionAnalytics Distribution</title>
+	<link rel="icon" href="favicon.png" type="image/x-icon"> 
+	<link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Archivo+Narrow">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,700">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="https://vjs.zencdn.net/7.4.1/video-js.css">
+	<link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.26/dijit/themes/tundra/tundra.css">
+	<link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.26/dojox/grid/resources/Grid.css">
+	<link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.26/dojox/grid/resources/tundraGrid.css">
+	<link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.26/dojox/layout/resources/ResizeHandle.css" />
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/3.26/esri/css/esri.css" />
+    <link rel="stylesheet" type="text/css" href="css/viewer.css">
+	 
+	 <!-- styles needed by jScrollPane and jLightSlider-->
+	<link rel="stylesheet" type="text/css" href="css/jquery.jscrollpane.css" media="all" />
+	<link rel="stylesheet" type="text/css" href="css/lightslider.css" />
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="js/jquery/jscroll/jquery.mousewheel.js"></script>
+	<script type="text/javascript" src="js/jquery/jscroll/jquery.jscrollpane.js"></script>
+	<script type="text/javascript" src="js/jquery/jlightslider/lightslider.js"></script>
+	
+	<script src="https://vjs.zencdn.net/7.4.1/video.min.js"></script>
+	
+	<script src="https://secure.aadcdn.microsoftonline-p.com/lib/1.0.16/js/adal.min.js"></script>
+	<script type="text/javascript" src="js/authenticate/jwt-decode.min.js"></script>
+	
+	<script type="text/javascript" src="js/underscore/underscore-min.js"></script>
+    <script type="text/javascript">
+		var djConfig = { parseOnLoad: true };
+    </script>
+    <script type="text/javascript" src="https://js.arcgis.com/3.26/"></script>
+	<script type="text/javascript" src="js/services.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/authenticate/sha256.min.js"></script>
+	<script type="text/javascript" src="js/authenticate/login.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/translations_json.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/ZoomifyImageViewer.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/zoomify.js?ver=1.10"></script>
+    <script type="text/javascript" src="js/globals.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/main.js?ver=1.10"></script>
+	
+    <script type="text/javascript">
+		dojo.addOnLoad(init);
+    </script>
+  </head>
+    <body class="tundra">
+        <div id="application" data-dojo-type="dijit.layout.BorderContainer" design="headline" gutters="false" >
+            <!-- Header Section-->
+            <div id="header" data-dojo-type="dijit.layout.ContentPane" region="top">
+                <div id="headerLeftDiv" class="distribution"></div>
+                <div id="sign-in" data-viewer-login="false">Sign In</div>
+                <div id="current-user"></div>
+                <div id="headerRightDiv"></div>
+                <div id="headerMenuDiv"><i class="fa fa-ellipsis-v"></i></div>
+            </div>
+            <!--End Header-->
+
+            <!-- Main Content Section (map, tools, viewers)-->
+            <div id="center" data-dojo-type="dijit.layout.BorderContainer" region="center" gutters="false">
+                <div id="map" dojotype="dijit.layout.ContentPane" region="center" gutters="false">
+                    <!-- Login Div -->
+                    <div id="loginDiv" style="display: none;">
+                        <form id="login-form" name="login-form">
+                            <div style="height: 105px;">
+                                <div id="uidDiv">
+                                    <div id="uid-icon"></div>
+                                    <input id="uid" name="username" type="text" autocomplete="username" placeholder="Username" data-authenticate-error="false"/>
+                                </div>
+                                <div  id="pwDiv">
+                                    <div id="pw-icon"></div>
+                                    <input id="pw" name="password" type="password" autocomplete="password" placeholder="Password" data-authenticate-error="false"/>
+                                    <div id="loginButton" class="loginButton"></div>
+                                </div>
+                                <div id="loginError">Invalid username or password</div>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- End Login Div -->
+                    
+                    <!-- Menu Div -->
+                    <div id="menuDivDropdown" style="display: none;">
+                        <ul class="dropdown-menu" aria-labelledby="header-menu">
+                            <li>
+                                <a target="_blank" href="javascript:openAboutDialog()">About</a>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <a target="_blank" href="javascript:openBugReportForm()">Contact Support</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- End Menu Div -->
+                    
+                    <!-- Site Viewer-->
+                    <div id="siteViewer" data-site-viewer-status="closed" class="distribution">
+                        <div id="siteViewerHeader">
+							<span class="headerTitle">feeder</span> viewer
+                            <div id="siteViewerClose" onclick="closeViewerPanel('siteViewer');"></div>
+                        </div>
+                        <div id="siteViewerOuterContent">
+                            <div id="siteViewerInnerContent">
+                                <div id="siteViewerInnerTop">
+                                    <table class="siteViewerTable" style="width:100%; table-layout:fixed">
+                                        <tr>
+                                            <td class="siteInfoHeader" style="width:100px;">Feeder:</td>
+                                            <td>
+                                                <select class="siteViewerDropDown" data-dojo-type="dijit.form.Select" name="siteViewerDropDown" id="siteViewerDropDown" onChange="setSiteViewerContent(0)" style="width: 100%;"></select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="siteInfoHeader">Work Order:</td>
+                                            <td>
+                                                <select class="siteViewerWorkOrderDropDown" data-dojo-type="dijit.form.Select" name="siteViewerWorkOrderDropDown" id="siteViewerWorkOrderDropDown" onChange="setSiteViewerContent(0)" style="width: 100%;"></select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="siteInfoHeader">Total Poles:</td>
+                                            <td class="siteInfoItem" id="distribution_inspections_total"></td>
+                                        </tr>
+                                    </table>
+									
+									<div id="distribution-class-legend" class="class-legend">
+										<table>
+											<tr>
+												<td><div id="distribution-class-legend-1" class="class-legend-symbol" data-filter="" data-value=1></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-2" class="class-legend-symbol" data-filter="" data-value=2></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-3" class="class-legend-symbol" data-filter="" data-value=3></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-4" class="class-legend-symbol" data-filter="" data-value=4></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-5" class="class-legend-symbol" data-filter="" data-value=5></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+											</tr>
+										</table>
+									</div>
+									
+									
+									<div id="siteInspectionReportButtonDiv">
+										<div id="siteVegetationEncroachment" class="downloadButton" style="visibility:visible;">
+											<i class="fa fa-tree downloadIcon"></i>
+										</div>
+										
+										<div id="siteFeederGoogleMapDownload" class="downloadButton">
+											<span class="fa-stack downloadStack">
+											<i class="fa fa-file fa-stack-1x"></i>
+											<i class="fa fa-map-marker fa-stack-1x downloadStackIcon" style="font-size: 12px;font-weight: normal;top: 2px;"></i>
+											</span>
+										</div>
+										
+										<div id="siteFeederMapDownload" class="downloadButton" style="visibility:visible;">
+											<span class="fa-stack downloadStack">
+												<i class="fa fa-map fa-stack-1x"></i>
+												<i class="fa fa-map-signs fa-stack-1x downloadStackIcon" style="font-size: 12px;top: 0px;"></i>
+											</span>
+										</div>
+										<div id="siteFeederReportDownload" class="downloadButton" style="visibility:visible;">
+											<span class="fa-stack downloadStack">
+												<i class="fa fa-file fa-stack-1x"></i>
+												<i class="fa fa-map-signs fa-stack-1x downloadStackIcon" style="font-size: 12px;top: 2px;"></i>
+											</span>
+										</div>
+										<div id="siteAnomalyMapDownload" class="downloadButton" style="visibility:visible;">
+											<span class="fa-stack downloadStack">
+												<i class="fa fa-map fa-stack-1x"></i>
+												<i class="fa fa-exclamation fa-stack-1x downloadStackIcon" style="font-size: 14px;top: 0px;"></i>
+											</span>
+										</div>
+										<div id="siteAnomalyReportDownload" class="downloadButton" style="visibility:visible;">
+											<span class="fa-stack downloadStack">
+												<i class="fa fa-file fa-stack-1x"></i>
+												<i class="fa fa-exclamation fa-stack-1x downloadStackIcon"></i>
+											</span>
+										</div>
+                                        <div id="siteExcelDownload" class="downloadButton">
+                                            <span class="fa-stack downloadStack">
+                                                <i class="fa fa-file fa-stack-1x"></i>
+                                                <i class="fa fa-stack-1x downloadStackIcon">X</i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div id="siteInspectionDownloadProgress">
+                                        <div id="siteInspectionDownloadProgressTooltip"></div>
+                                        <div id="siteInspectionDownloadStatus">Preparing (0/0) ...</div>
+                                        <div id="siteInspectionDownloadProgressBar"></div>
+                                    </div>
+									
+                                </div>
+                                <div id="siteViewerInnerCenter">
+                                    <div id="siteViewerRecordsText">Pole Records</div>
+                                    <div id="siteViewerRecords" class="scroll-pane">
+                                        <div id="siteViewerRecordsTable"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+						
+						
+						<div id="transmissionViewerOuterContent">
+                            <div id="transmissionViewerInnerContent">
+                                <div id="transmissionViewerInnerTop">
+                                    <table style="width:100%; table-layout:fixed">
+                                        <tr>
+                                            <td class="siteInfoHeader" style="width:110px;">Line ID:</td>
+                                            <td>
+                                                <select class="siteViewerDropDown" data-dojo-type="dijit.form.Select" name="transmissionViewerDropDown" id="transmissionViewerDropDown" onChange="setSiteViewerContent(this.value)" style="width: 100%;">
+													<option value=""> -- </option>
+												</select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="siteInfoHeader">Work Order:</td>
+                                            <td>
+												<select class="siteViewerWorkOrderDropDown" data-dojo-type="dijit.form.Select" name="transmissionViewerWorkOrderDropDown" id="transmissionViewerWorkOrderDropDown" onChange="setSiteViewerContent(0)" style="width: 100%;"></select>
+                                            </td>
+                                        </tr>
+										
+										
+                                        <tr>
+                                            <td class="siteInfoHeader">Towers (Total):</td>
+                                            <td class="siteInfoItem" id="transmission_inspections_total"></td>
+                                        </tr>
+                                    </table>
+									
+									<div id="transmission-class-legend" class="class-legend">
+										<table>
+											<tr>
+												<td><div id="transmission-class-legend-1" class="class-legend-symbol" data-filter="" data-value=1></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="transmission-class-legend-2" class="class-legend-symbol" data-filter="" data-value=2></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="transmission-class-legend-3" class="class-legend-symbol" data-filter="" data-value=3></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+											</tr>
+										</table>
+									</div>
+									
+									<div id="transmissionInspectionReportButtonDiv">
+                                        <div id="transmissionVideo" class="downloadButton">
+                                            <i class="fa fa-video-camera downloadIcon"></i>
+                                        </div>
+										<div id="transmissionExcelDownload" class="downloadButton">
+                                            <span class="fa-stack downloadStack">
+                                                <i class="fa fa-file fa-stack-1x"></i>
+                                                <i class="fa fa-stack-1x downloadStackIcon">X</i>
+                                            </span>
+                                        </div>
+                                    </div>
+									
+                                </div>
+                                <div id="transmissionViewerInnerCenter">
+                                    <div id="transmissionViewerRecordsText">Tower Records</div>
+                                    <div id="transmissionViewerRecords" class="scroll-pane">
+                                        <div id="transmissionViewerRecordsTable"></div>
+                                    </div>
+                                </div>
+                            </div>
+						</div>
+						
+						
+                        <div id="siteViewerFooter"></div>
+                    </div>
+                    <!--End Site Viewer-->
+                    
+                    <!--Blade Viewer-->
+                    <div id="bladeViewer" data-blade-viewer-status="closed">
+                        <div id="bladeViewerHeader">
+							<span class="headerTitle">pole</span> viewer
+                            <div id="bladeViewerClose" onclick="closeViewerPanel('bladeViewer');"></div>
+                        </div>
+                        <div id="bladeViewerOuterContent" class="scroll-pane">
+                            <div id="bladeViewerInnerContent">
+                                <div id="bladeViewerInnerLeft">
+                                    <div id="bladeViewerInnerTop">  
+										<div id="bladeViewerInfo">
+												<div id="siteTurbineBladeInfo">
+													<div>
+														<div class="bladeInfoRow">
+															<div class="bladeInfoHeader" style="width: 65px;">Feeder:</div>
+															<div class="bladeInfoItem" style="width: 200px;" id="siteId" data-site-id="0"></div>
+															<div class="bladeInfoHeader" style="width: 90px;">Work Order:</div>
+															<div class="bladeInfoItem" style="width: 100px;" id="workOrder" data-workorder-id="0"></div>
+														</div>
+														<div class="bladeInfoRow">
+															<div class="bladeInfoHeader" style="width: 65px;">Pole ID:</div>
+															<div class="bladeInfoItem" style="width: 200px;" id="turbineId" data-turbine-id="0" data-turbine-name="0"></div>
+															<div class="bladeInfoHeader" style="width: 75px;">Location:</div>
+															<div class="bladeInfoItem" style="width: 175px;" id="turbineLocation"></div>
+														</div>
+														<div class="bladeInfoRow">
+															<div id="pole-criticality-header" class="bladeInfoHeader">Horizontal Pole Loading (%):</div>
+															<div class="bladeInfoItem" style="width: 30px; height: 30px;" id="inspectionCriticality">
+																<div id="pole-criticality"></div>
+															</div>
+														</div>
+													</div>
+													
+													<div id="bladeInspectionReportButtonDiv">
+														
+														<div id="bladeInspectionXmlDownload" class="downloadButton">
+															<span class="fa-stack downloadStack">
+															<i class="fa fa-file fa-stack-1x"></i>
+															<i class="fa fa-code fa-stack-1x downloadStackIcon"></i>
+															</span>
+														</div>
+														
+														<div id="bladeInspectionForemanDownload" class="downloadButton">
+															<span class="fa-stack downloadStack">
+															<i class="fa fa-file fa-stack-1x"></i>
+															<i class="fa fa-file-pdf-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
+															</span>
+														</div>
+														
+														<div id="bladeInspectionReportDownload" class="downloadButton">
+															<span class="fa-stack downloadStack">
+															<i class="fa fa-file fa-stack-1x"></i>
+															<i class="fa fa-file-text-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
+															</span>
+														</div>
+														
+													</div>
+													<div id="bladeInspectionDownloadProgress">
+														<div id="bladeInspectionDownloadProgressTooltip"></div>
+														<div id="bladeInspectionDownloadStatus">Preparing (0/0) ...</div>
+														<div id="bladeInspectionDownloadProgressBar"></div>
+													</div>
+													
+												</div>
+											</div>
+                                    </div>							
+                                    <div id="bladeViewerInnerCenter">
+                                        <div id="bladeViewerImageText">Image</div>
+										<div id="transmissionToggleButtons"class="btn-group">
+											<button type="button" class="btn analyst active" value="Analyst" id="analyst-button">Photos</button>
+											<button type="button" class="btn ai" value="AI"  id="ai-button">AI Prediction</button>
+										</div>
+                                        <div id="bladeViewerImageOuter">  
+											<div id="bladeViewerImageGallery">
+												<ul id="image-gallery" class="gallery list-unstyled cS-hidden">
+												</ul>
+											</div>
+                                            <div id="zoomify" data-active-image-id="NA"></div>
+                                            <div id="zoomify-up" class="zoomifyBladeViewerImageNav"></div>
+                                            <div id="zoomify-down" class="zoomifyBladeViewerImageNav"></div>
+                                            
+                                            <div id="zoomify-loading"></div> 
+											
+											<div id="zoomify-edit-mode">Mode: <span id="edit-mode"></span>&nbsp;&nbsp;&nbsp;<span id="shape-mode">(rectangle)</span></div>
+                                            <div id="toggle-polygons" title="Toggle Inspection Polygons" data-polygons-status="on" onclick="setHotspotsVisibility()"></div>
+
+											
+                                        </div>
+										
+										<div id="bladeInspectorButtonContainer">
+											<div id="bladeMoreInfoButtonDiv">
+												<div id="bladeMoreInfoButton"></div>
+											</div>
+										</div>
+                                    </div>
+                                </div>
+								<div id="bladeViewerInnerRight" style="position:relative;display:flex;z-index:10000;">
+									<div id="distributionInspectorPanel" class="inspectorPanel">
+										<div class="header">Inspection Details</div>
+										<div id="distributionInspectionDataTableContent" class="scroll-pane">
+											<table id="distributionInspectionDataTable" class="inspectionDataTable"></table>
+										</div>
+									</div>
+									
+									<div id="transmissionInspectorPanel" class="inspectorPanel">
+										<div class="header">Inspection Details</div>
+										<div id="transmissionInspectionDataTableContent" class="scroll-pane">
+											<table id="transmissionInspectionDataTable" class="inspectionDataTable"></table>
+										</div>
+										<div style="padding-bottom: 5px;">
+											<table id="transmissionInspectionInputTable">
+                                                 <tr>
+                                                    <td valign="center" class="zoomifyAnnotationLabelRows">Inspection Date: </td>
+													<td id="inspectionDateRow" class="zoomifyAnnotationInputRows"></td>
+                                                </tr>
+												<tr>
+                                                    <td valign="center" class="zoomifyAnnotationLabelRows" colspan="2">Inspection Event(s): </td>
+                                                </tr>
+                                                <tr>
+                                                    <td id="inspectionEventRow" class="zoomifyAnnotationInputRows" colspan="2">
+                                                        <div id="inspectionEventRowDropDown"></div>
+                                                        <div id="addPolygon"><i class="fa fa-plus"></i></div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td id="positionTypeRowLabel" valign="center" class="zoomifyAnnotationLabelRows" colspan="2">Area: </td>
+                                                </tr>
+                                                <tr>
+                                                    <td id="positionTypeRow" class="zoomifyAnnotationInputRows" colspan="2"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td id="findingTypeRowLabel" valign="center" class="zoomifyAnnotationLabelRows" colspan="2">Problem Details: </td>
+                                                </tr>
+                                                <tr>
+                                                    <td id="findingTypeRow" class="zoomifyAnnotationInputRows" colspan="2"></td>
+                                                </tr>
+                                                <tr class="inspection-only">
+                                                    <td id="severityRowLabel" valign="center" class="zoomifyAnnotationLabelRows" colspan="2" style="height:22px;">Criticality:  </td>
+                                                </tr>
+                                                <tr class="inspection-only">
+                                                    <td id="severityRow" class="zoomifyAnnotationInputRows" colspan="2">
+                                                        <div id="severityRowDiv">
+                                                            <div id="severityRowContentDiv"></div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr class="inspection-only">
+                                                    <td valign="center" class="zoomifyAnnotationLabelRows" colspan="2">Images:  </td>
+                                                </tr>
+                                                <tr class="inspection-only">
+                                                    <td id="imagesRow" class="zoomifyAnnotationInputRows" colspan="2">
+                                                        <div id="imagesRowDiv">
+                                                            <div id="imageRowContentDiv">
+                                                                <div id="imageRowContainer"></div>
+                                                            </div>
+                                                            <div id="imageRowToolsDiv">
+                                                                <div id="addInspectionEventImage" class="inspectionEventImageTools"></div>
+                                                                <div id="removeInspectionEventImage" class="inspectionEventImageTools"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr class="inspection-only">
+                                                    <td valign="center" id="commentRowLabel"  class="zoomifyAnnotationLabelRows" colspan="2">Comments:  </td>
+                                                    </tr>
+                                                <tr class="inspection-only">
+                                                    <td id="commentRow" class="zoomifyAnnotationInputRows" colspan="2"  style="height: 30px;">
+                                                        <div id="commentTextBoxDiv"></div>
+                                                    </td>
+                                                </tr>
+                                                
+                                            </table>
+										</div>
+										<div id="annotationToolsDiv">
+											<div id="annotationToolsContainer">
+												<div id="removePolygon" class="annotationDisplayPanelButtons"></div>
+												<div id="savePolygon" class="annotationDisplayPanelButtons"></div>
+												<div id="digitizePolygon" class="annotationDisplayPanelButtons"></div>
+												<div id="cancelPolygon" class="annotationDisplayPanelButtons"></div> 
+												<div id="modifyPolygon" class="annotationDisplayPanelButtons"></div>
+											</div>
+										</div>
+									</div>
+									
+									
+								</div>
+								
+                            </div>
+                        </div>
+                        <div id="bladeViewerFooter"></div>
+                    </div>
+                    <!--End Blade Viewer-->
+					
+					<!-- LAS Viewer -->
+					<div id="lasViewer" data-las-viewer-status="closed">
+                        <div id="lasViewerHeader">
+							<span class="headerTitle">vegetation encroachment</span>
+                            <div id="lasViewerClose" onclick="closeViewerPanel('lasViewer');"></div>
+                        </div>
+                        <div id="lasViewerOuterContent">
+							<iframe src=""></iframe>
+							<div class="potree-control active" id="potree-orbit-control"><i class="fa fa-refresh"></i></div>
+							<div class="potree-control" id="potree-earth-control"><i class="fa fa-arrows"></i></div>
+							
+							<div id="lasKmlDownload" class="lasDownloadButton">
+								<span class="fa-stack downloadStack">
+								<i class="fa fa-file fa-stack-1x lasDownloadStackIcon"></i>
+								<i class="fa fa-stack-1x lasDownloadStackText">KML</i>
+								</span>
+							</div>
+							
+							<div id="lasGoogleMapDownload" class="lasDownloadButton">
+								<span class="fa-stack downloadStack">
+								<i class="fa fa-file fa-stack-1x lasDownloadStackIcon"></i>
+								<i class="fa fa-map-marker fa-stack-1x lasDownloadStackText" style="font-size: 18px;font-weight: normal;top: 4px;"></i>
+								</span>
+							</div>
+						</div>
+						<div id="lasViewerFooter"></div>
+					</div>
+					<!--  -->
+                    
+                    <!--Map Tool Section-->
+                    <div id="mapHomeButton" class="mapButtons"></div>
+                    <div id="mapBaseSatellite" class="mapButtons"></div>
+                    <div id="mapBaseRoad" class="mapButtons"></div>
+                    <div id="mapWindSite" class="mapButtons" data-wind-selector-status="closed"></div>
+                    <div id="siteViewerButton" class="mapButtons"></div>
+                    <div id="bladeViewerButton" class="mapButtons"></div>
+					<div id="switchViewButton" class="mapButtons distribution"></div>
+                    <div id="mapProgressBar" data-dojo-type="dijit.ProgressBar" data-dojo-id="mapProgressBar" data-dojo-props="indeterminate : true"></div>
+                    <!--End Map Tool Section-->
+                    
+                    <!--Site Selector Dialog-->
+                    <div id="windSiteSelectConnector" class="toolTipConnector"></div>
+                    <div id="windSiteSelectContainer" class="toolTipContainer">
+                        <div id="windSiteSelectContent" class="scroll-pane" >
+                            <div id="windSiteSelectInnerContent">
+								<div id="distributionSelectorList"></div>
+								<div id="transmissionSelectorList"></div>
+							</div>
+                        </div>
+                    </div>
+                    <!--End Site Selector Dialog Section-->
+                    
+                    <div id="map-legend" class="map-legend">
+                        <table id="distribution-legend">
+                            <tr>
+                                <td colspan=5>Horizontal Pole Loading (%)</td>
+                            </tr>
+                            <tr>
+                                <td><div id="distribution-legend-1" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-2" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-3" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-4" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-5" class="map-legend-symbol"></div></td>
+                            </tr>
+                            <tr>
+                                <td id="map-legend-text-1">0-89</td>
+                                <td id="map-legend-text-2">90-99</td>
+                                <td id="map-legend-text-3">100-119</td>
+                                <td id="map-legend-text-4">120-200</td>
+                                <td id="map-legend-text-5">200+</td>
+                            </tr>
+                        </table>
+						
+						<table id="transmission-legend">
+                            <tr>
+                                <td colspan=3>Damage Assessment</td>
+                            </tr>
+                            <tr>
+                                <td><div id="transmission-legend-1" class="map-legend-symbol"></div></td>
+                                <td><div id="transmission-legend-2" class="map-legend-symbol"></div></td>
+                                <td><div id="transmission-legend-3" class="map-legend-symbol"></div></td>
+                            </tr>
+                            <tr>
+                                <td id="transmission-legend-text-1">None</td>
+                                <td id="transmission-legend-text-2">Minor</td>
+                                <td id="transmission-legend-text-3">Critical</td>
+                            </tr>
+                        </table>
+                        <div class="map-legend-logo"><!-- powered <i>by</i> --> <span id="logo-inspectools"></span></div>
+                    </div>
+                </div>
+				<div class="maptooltip"></div>
+            </div>
+            <!--End Main Section-->
+            
+            <!-- Footer Section-->
+            <div id="footer" dojotype="dijit.layout.ContentPane" region="bottom" gutters="false"></div>
+            <!--End Footer-->
+        </div>
+		
+		<div id="transmissionLineVideo" data-dojo-type="dijit.Dialog" data-dojo-id="transmissionLineVideo" data-dojo-props="title:'transmission line inspection video', draggable:true">
+            <div id="transmissionLineVideoContent" class="dialogContent" data-vjs-player>
+				<video id="transmission-video-player" class="video-js" data-setup='{ "controls": true, "autoplay": false, "preload": "auto", "width":900, "height":507 }'>
+				  <source src="video/Video_Inspection_Line_1001.mp4" type="video/mp4">
+				</video>
+			</div>
+        </div>
+		
+        <div id="dataWarehouseError" data-dojo-type="dijit.Dialog" data-dojo-id="dataWarehouseError" data-dojo-props="title:'Error', draggable:false">
+            <div id="dataWarehouseErrorContent" class="dialogContent"></div>
+        </div>
+        
+        <div id="confirmInspectionEventDelete" data-dojo-type="dijit.Dialog" data-dojo-id="confirmInspectionEventDelete" data-dojo-props="title:'Confirm Delete?', draggable:false">
+            <div id="confirmInspectionEventDeleteContent" class="dialogContent">Are you sure that you want to delete the current inspection event?</div>
+            <div>
+                <div id="confirmDelete">yes</div>
+                <div id="cancelDelete">cancel</div>
+            </div>
+        </div>
+        
+        <div id="confirmInspectionEventSave" data-dojo-type="dijit.Dialog" data-dojo-id="confirmInspectionEventSave" data-dojo-props="title:'Confirm Save?', draggable:false">
+            <div id="confirmInspectionEventSaveContent" class="dialogContent">You are adding an inspection event while still editing the current event.  Do you want to save the current inspection event?</div>
+            <div>
+                <div id="confirmSave">yes</div>
+                <div id="cancelSave">cancel</div>
+            </div>
+        </div>
+        
+        <div id="bugReport" data-dojo-type="dijit.Dialog" data-dojo-id="bugReport" data-dojo-props="title:'software support request', draggable:true">
+            <div id="bugReportContent" class="dialogContent" style="padding:10px 20px;">
+                <table style="width: 320px;">
+                    <tr>
+                        <td style="width:20%;">Request:</td>
+                        <td style="width:80%;"><div id="bugReport-type"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Category:</td>
+                        <td><div id="bugReport-element"></div></td>
+                    </tr>
+                    <tr>
+                        <td id="bugReport-title-title" colspan=2>Title<span class="bugReport-require">*required</span></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2><input type="text" id="bugReport-title" class="bugReport-text"></input></td>
+                    </tr>
+                    <tr>
+                        <td id="bugReport-summary-title" colspan=2>Description<span class="bugReport-require">*required</span></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2><textarea id="bugReport-summary" class="bugReport-textarea"></textarea></td>
+                    </tr>
+                </table>
+                
+                <div id="bugOptionsDiv">
+                    <table id="bugOptions">
+                        <tr>
+                            <td style="width:15%;">Severity:</td>
+                            <td style="width:35%;"><div id="bugReport-severity"></div></td>
+                            <td style="width:15%;">Priority:</td>
+                            <td style="width:35%;"><div id="bugReport-priority"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="bugReport-steps-title" colspan=4 style="padding-top:10px;">Steps to Reproduce<span class="bugReport-require">*required</span></td>
+                        </tr>
+                        <tr>
+                            <td colspan=4><textarea id="bugReport-steps" class="bugReport-textarea"></textarea></td>
+                        </tr>
+                        <tr>
+                            <td colspan=4>Expected Results</td>
+                        </tr>
+                        <tr>
+                            <td colspan=4><textarea id="bugReport-expected" class="bugReport-textarea"></textarea></td>
+                        </tr>
+                        <tr>
+                            <td colspan=4>Actual Results</td>
+                        </tr>
+                        <tr>
+                            <td colspan=4><textarea id="bugReport-actual" class="bugReport-textarea"></textarea></td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="text-align:center">
+                    <div id="bugReport-submit">submit</div>
+                    <!-- <a target="_bank" id="bugReport-submit-link" src="" style="position:absolute; display:none;"></a> -->
+                    <iframe id="bugReport-submit-link" src="" style="position:absolute; display:none;"></iframe>
+                </div>
+            </div>
+        </div>
+		<div id="about" data-dojo-type="dijit.Dialog" data-dojo-id="about" data-dojo-props="title:'about', draggable:true">
+            <div id="about-logo"></div>
+            <div id="about-version"></div>
+            <div id="about-copyright"><i class="fa fa-copyright" aria-hidden="true"></i> <span id="aboutYearStart"></span> - <span id="aboutYearEnd"></span><span id="about-logo-inspectools">InspecTools, Inc.</span> All Rights Reserved</div>
+         </div>
+		 
+        <div style="display:none"><iframe id="downloadFrame" src=""></iframe></div>
+		<div id="authenticationError" data-dojo-type="dijit.Dialog" data-dojo-id="authenticationError" data-dojo-props="title:'Login Error', draggable:false">
+            <div id="authenticationErrorContent" class="dialogContent">
+				<div class="authenticationErrorBanner">:(</div>
+				<div class="authenticationErrorHeader">Oops! Login Failed </div>
+				<div class="authenticationErrorText">There was a technical problem logging you into the application at this time.<br>Try again or contact support for assistance.</div>
+			</div>
+            <div class="authenticationErrorButtonContainer">
+                <div id="authenticationErrorButton" class="authenticationErrorButton"><i class="fa fa-times"></i>Close</div>
+            </div>
+        </div>
+		
+		<div id="sessionTimeoutWarning" data-dojo-type="dijit.Dialog" data-dojo-id="sessionTimeoutWarning" data-dojo-props="title:'Session Timeout Warning', draggable:false">
+            <div id="sessionTimeoutContent" class="dialogContent">
+				<div class="sessionTimeoutText">Your login session will expire in:</div>
+				<div id="sessionTimeoutExpire" class="sessionTimeoutHeader"></div>
+				<div class="sessionTimeoutText">Click <b>Continue</b> to keep working or <b>Sign Out</b> if you are finished.</div>
+			</div>
+            <div class="sessionTimeoutButtonContainer">
+                <div id="sessionContinueButton" class="sessionTimeoutButton">Continue</div>
+				<div id="sessionLogoutButton" class="sessionTimeoutButton">Sign Out</div>
+            </div>
+        </div>
+		
+		<div id="loginProgress" data-dojo-type="dijit.Dialog" data-dojo-id="loginProgress" data-dojo-props="title:'Logging in ...', draggable:false">
+            <div id="loginProgressContent" class="dialogContent"></div>
+			<div class="login-progress-tracker">
+				<div class="login-progress-tracker-control">
+					<div class="progress-progress">
+						<div class="progress-tracks">
+							<div class="progress-track S2"></div>
+							<div class="progress-track S3"></div>
+							<div class="progress-track S4"></div>
+						</div>
+						<div class="progress-stops">
+							<div class="progress-stop S1 active">1</div>
+							<div class="progress-stop S2">2</div>
+							<div class="progress-stop S3">3</div>
+							<div class="progress-stop S4">4</div>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+		
+    </body>
+</html>
