@@ -1,8 +1,4 @@
 function init() {
-	/* initAAD();
-	if (window.location == window.parent.location) {
-		loadMainApp();
-	} */
 	
 	loadMainApp();
 
@@ -23,6 +19,13 @@ function init() {
 			$('#image-gallery').removeClass('cS-hidden');
 		}
 	});	
+	
+	checkAuth0();
+	
+	dojo.connect(dojo.byId("authenticationErrorButton"), "onclick", function() {
+		console.log(authErrorKey);
+		authErrorConfig[authErrorKey].action();
+	})
 }
 
 function loadMainApp(){
@@ -424,7 +427,9 @@ function loadMainApp(){
     
     dojo.connect(dojo.byId("bladeInspectionReportDownload"),"click", function(){
 		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].designReportURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('bladeInspectionReportDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Design<br>report (PDF)');
@@ -435,7 +440,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("bladeInspectionForemanDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisReportURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('bladeInspectionForemanDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open PoleForeman<br>Report (PDF)');
@@ -446,7 +453,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("bladeInspectionXmlDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisResultURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('bladeInspectionXmlDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Download PoleForeman<br>Analysis (XML)');
@@ -455,8 +464,36 @@ function loadMainApp(){
 		if (tooltip) { tooltip.style.display = "none";}
 	});
 	
+	dojo.connect(dojo.byId("bladeInspectionAnomalyDownload"),"click", function(){
+        var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].anomalyReportDownloadURL;
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
+    });
+    dojo.connect(dojo.byId('bladeInspectionAnomalyDownload'), 'onmousemove', function(evt) {
+		showToolTip(evt, 'Open Anomaly<br>Report (PDF)');
+	});	
+	dojo.connect(dojo.byId('bladeInspectionAnomalyDownload'), 'onmouseout', function(evt) {
+		if (tooltip) { tooltip.style.display = "none";}
+	});
+	
+	dojo.connect(dojo.byId("bladeInspectionDroneSurveyDownload"),"click", function(){
+        var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].droneSurveySheetURL;
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
+    });
+    dojo.connect(dojo.byId('bladeInspectionDroneSurveyDownload'), 'onmousemove', function(evt) {
+		showToolTip(evt, 'Download Drone Survey<br>Sheet (XLS)');
+	});	
+	dojo.connect(dojo.byId('bladeInspectionDroneSurveyDownload'), 'onmouseout', function(evt) {
+		if (tooltip) { tooltip.style.display = "none";}
+	});
+	
 	dojo.connect(dojo.byId("siteVegetationEncroachment"),"click", function(){
-        openViewerPanel('lasViewer');
+        if (!_.isNull(lasDataAvailable)) {
+			openViewerPanel('lasViewer');
+		}
     });
     dojo.connect(dojo.byId('siteVegetationEncroachment'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Vegetation Encroachment<br>LiDAR Viewer');
@@ -467,7 +504,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteFeederGoogleMapDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.vegitationEncroachmentGoogleEarthURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteFeederGoogleMapDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Vegetation<br>Encroachment in Google Maps');
@@ -478,7 +517,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteAnomalyMapDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.anomalyMapDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteAnomalyMapDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Anomaly<br>Map (PDF)');
@@ -489,7 +530,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteAnomalyReportDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.anomalyReportDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteAnomalyReportDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Anomaly<br>Report (PDF)');
@@ -500,7 +543,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteFeederReportDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.summaryReportDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteFeederReportDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Feeder<br>Summary Report (PDF)');
@@ -511,7 +556,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteFeederMapDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.feederMapDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteFeederMapDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Circuit<br>Map (PDF)');
@@ -522,7 +569,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("siteExcelDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.surveyReportDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('siteExcelDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Download Survey<br>Template (XLS)');
@@ -531,9 +580,24 @@ function loadMainApp(){
 		if (tooltip) { tooltip.style.display = "none";}
 	})
 	
+	dojo.connect(dojo.byId("siteFeederVideo"),"click", function(){
+        var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
+		if (!_.isNull(videos) && videos.length > 0) {
+			inspectionLineVideo.show();
+		}
+    });
+    dojo.connect(dojo.byId('siteFeederVideo'), 'onmousemove', function(evt) {
+		showToolTip(evt, 'Open Distribution Line<br>Inspection Video');
+	});	
+	dojo.connect(dojo.byId('siteFeederVideo'), 'onmouseout', function(evt) {
+		if (tooltip) { tooltip.style.display = "none";}
+	})
+	
 	dojo.connect(dojo.byId("lasKmlDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.vegitationEncroachmentShapeDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('lasKmlDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Download Vegetation<br>Encroachment Results (KML)');
@@ -544,7 +608,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("lasGoogleMapDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.vegitationEncroachmentGoogleEarthURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('lasGoogleMapDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Display Vegetation Enroachment<br>Results in Google Maps');
@@ -556,7 +622,9 @@ function loadMainApp(){
 	
 	dojo.connect(dojo.byId("transmissionExcelDownload"),"click", function(){
         var url = siteData[siteId].workOrders[workOrderNumber].summary.summaryReportDownloadURL;
-		window.open(url, '_blank');
+		if (!_.isNull(url)) {
+			window.open(url, '_blank');
+		}
     });
     dojo.connect(dojo.byId('transmissionExcelDownload'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Download Inspection<br>Results (XLS)');
@@ -566,7 +634,10 @@ function loadMainApp(){
 	})
 	
 	dojo.connect(dojo.byId("transmissionVideo"),"click", function(){
-        transmissionLineVideo.show();
+		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
+		if (!_.isNull(videos) && videos.length > 0)  {
+			inspectionLineVideo.show();
+		}
     });
     dojo.connect(dojo.byId('transmissionVideo'), 'onmousemove', function(evt) {
 		showToolTip(evt, 'Open Transmission Line<br>Inspection Video');
@@ -575,34 +646,23 @@ function loadMainApp(){
 		if (tooltip) { tooltip.style.display = "none";}
 	})
 	
-	dojo.connect(dijit.byId('transmissionLineVideo'), "onHide", function() { 
-		var player = videojs('transmission-video-player');
+	dojo.connect(dijit.byId('inspectionLineVideo'), "onHide", function() { 
+		var player = videojs('inspection-video-player');
 		player.pause();
 		player.currentTime(0);
 	})
 	
-	/* dojo.connect(dojo.byId("sessionContinueButton"), "onclick", function() {
+	dojo.connect(dojo.byId("sessionContinueButton"), "onclick", function() {
 		renewToken();
 	})
 	
 	dojo.connect(dojo.byId("sessionLogoutButton"), "onclick", function() {
-		authContext.clearCache();
-		authContext.logOut();
+		logOut();
 		sessionTimeoutWarning.hide();
-	}) */
-	
-	/* dojo.forEach(_.keys(legendMessages), function(key) { 
-		dojo.connect(dojo.byId(key), 'onmouseover', function(event) {
-			console.log(key);
-			showToolTip(event, legendMessages[key], "top")
-		});
-		dojo.connect(dojo.byId(key), 'onmouseout', function(event) {
-			if (tooltip) { tooltip.style.display = "none";} 
-		});
-	}); */
+	})
     
     //apply relevant colors to map legend symbols
-    dojo.forEach(["1","2","3","4","5"], function(level) {
+    dojo.forEach(["1","2","3","4"], function(level) {
         dojo.style("distribution-legend-" + level, "backgroundColor", severityColors[level]);
 		dojo.style("distribution-class-legend-" + level, "backgroundColor", severityColors[level]);
     });
@@ -611,10 +671,6 @@ function loadMainApp(){
         dojo.style("transmission-legend-" + level, "backgroundColor", transmissionSeverityColors[level]);
 		dojo.style("transmission-class-legend-" + level, "backgroundColor", transmissionSeverityColors[level]);
     });
-    
-    /* dojo.connect(dojo.byId("logo-inspectools"), "onclick", function(){ 
-		window.open("http://www.inspectools.com");
-	}); */
 	
 	dojo.forEach(dojo.query(".class-legend-symbol"), function(node) {
 		dojo.connect(node, 'onclick', function(event) {
@@ -730,8 +786,59 @@ function loadMainApp(){
         }
 	});
 	
+	var storeData = { 
+		label:"id", 
+		identifier:"id", 
+		items: [{ "id": "" }] 
+	};
+	var store = new dojo.data.ItemFileReadStore({ data: storeData });
+	poleFilterSelect = new dijit.form.FilteringSelect({
+		store: store,
+		autoComplete: true,
+		required: false,
+		searchAttr: "name",
+		value: "",
+		maxHeight: 200,
+		style: "width: 96px;margin-left: 9px;",
+		onChange: function(id) {
+			if (id != "") {
+				setSelectedRowInSiteViewerTable(id,"site");
+				
+				var graphic = dojo.filter(windFeatureLayer.graphics, function(graphic) { return graphic.attributes['uniqueId'] == id })[0];
+				
+				clearHighlightSymbol();
+				setSymbologyForFeature(graphic, true);
+				
+				var geometry = graphic.geometry;
+				map.centerAt(geometry);
+			}
+		}
+	}, dojo.byId("poleSelect"));
+
+
+	transmissionFilterSelect = new dijit.form.FilteringSelect({
+		store: store,
+		autoComplete: true,
+		required: false,
+		searchAttr: "name",
+		value: "",
+		maxHeight: 200,
+		style: "width: 127px;margin-left: 19px;",
+		onChange: function(id) {
+			if (id != "") {
+				setSelectedRowInSiteViewerTable(id,"transmission");
+				
+				var graphic = dojo.filter(windFeatureLayer.graphics, function(graphic) { return graphic.attributes['uniqueId'] == id })[0];
+				
+				clearHighlightSymbol();
+				setSymbologyForFeature(graphic, true);
+				
+				var geometry = graphic.geometry;
+				map.centerAt(geometry);
+			}
+		}
+	}, dojo.byId("transmissionSelect"));	
 	
-	createInspectionDisplay();
 }
 
 function advanceToNextImage(imgType, imgId, imgName, imgLabel, zUrl){
@@ -851,22 +958,24 @@ function loadMapLayers() {
 		var workOrders = _.keys(siteData[siteId].workOrders);
 		var assetType = siteData[siteId].type;
 		dojo.forEach(workOrders, function(workOrder) {
-			dojo.forEach(siteData[siteId].workOrders[workOrder].summary.data, function(asset) {
-				var exists = _.contains(assetIds, asset.id);
-				if (!exists) {
-					/* if (!(assetType == "TransmissionLine" && !_.isEmpty(asset.assetInspection) && asset.assetInspection.reasonNotInspected == "In Substation")) {
+			if(_.has(siteData[siteId].workOrders[workOrder], "summary")) {
+				dojo.forEach(siteData[siteId].workOrders[workOrder].summary.data, function(asset) {
+					var exists = _.contains(assetIds, asset.id);
+					if (!exists) {
+						/* if (!(assetType == "TransmissionLine" && !_.isEmpty(asset.assetInspection) && asset.assetInspection.reasonNotInspected == "In Substation")) {
+							assetIds.push(asset.id);
+							asset.organizationId = siteData[siteId].organizationId;
+							asset.assetType = assetType;
+							authUserAssets.push(asset);
+						} */
+						
 						assetIds.push(asset.id);
 						asset.organizationId = siteData[siteId].organizationId;
 						asset.assetType = assetType;
 						authUserAssets.push(asset);
-					} */
-					
-					assetIds.push(asset.id);
-					asset.organizationId = siteData[siteId].organizationId;
-					asset.assetType = assetType;
-					authUserAssets.push(asset);
-				}
-			})
+					}
+				})
+			}
 		})
 	});
 	
@@ -911,7 +1020,7 @@ function loadMapLayers() {
 		"materialType": asset.type
 	  };
 	  
-	  var criticalityProperty = (asset.assetType == "DistributionLine") ? "criticality" : "severity";
+	  var criticalityProperty = (asset.assetType == "DistributionLine" && authUserOrgKey == "default") ? "criticality" : (asset.assetType == "DistributionLine" && authUserOrgKey == "default") ? "status" : "severity";
 	  attributes.criticality = (_.isEmpty(asset.assetInspection) || _.isNull(asset.assetInspection[criticalityProperty]) || !_.has(asset.assetInspection, criticalityProperty)) ? "NA" : asset.assetInspection[criticalityProperty];
 	  
 	  graphic.setGeometry(geometry); 
@@ -981,7 +1090,8 @@ function loadMapLayers() {
 		var url = window.location.href + "images/icons/" + svg + ".svg";
 		graphic.symbol.setUrl(url);
 		
-		var alpha = 1;
+		var alpha = 1.0;
+		var alpha = (graphic.attributes["subStationId"] == siteId) ? 1 : 0.1;
 		var filterNode = dojo.query("#" + assetType + "-class-legend .class-legend-symbol[data-filter='show']");
 		if (filterNode.length > 0) {
 			var value = dojo.attr(filterNode[0], "data-value");
@@ -989,7 +1099,7 @@ function loadMapLayers() {
 		}
 		
 		if (!_.isNull(graphic.getNode())) {
-			dojo.attr(graphic.getNode(), "opacity", alpha);
+			dojo.style(graphic.getNode(), "opacity", alpha);
 		}
 		
 	});
@@ -1082,7 +1192,7 @@ function loadMapLayers() {
 				content += '<td>' + id + '</td>';
 				content += '</tr>';
 				
-				if ( evt.graphic.attributes['criticality'] != "NA") {
+				if ( evt.graphic.attributes['criticality'] != "NA" && authUserOrgKey == "default") {
 					content += '<tr>';
 					content += '<td>Horizontal Pole Loading (%):</td>';
 					content += '<td>' + evt.graphic.attributes['horizontalLoadingPercent'] + '</td>';
@@ -1182,9 +1292,9 @@ function setSymbologyForFeature(feature, selection) {
 		feature.symbol.setUrl(url);
 	}
 	
-	var alpha = (!_.isUndefined(feature.getNode()) && !_.isNull(feature.getNode())) ? dojo.attr(feature.getNode(), "opacity") : 1.0;
+	var alpha = (!_.isUndefined(feature.getNode()) && !_.isNull(feature.getNode())) ? dojo.style(feature.getNode(), "opacity") : 0.5;
 	if (!_.isNull(feature.getNode())) {
-		dojo.attr(feature.getNode(), "opacity", alpha);
+		dojo.style(feature.getNode(), "opacity", alpha);
 	}
 }
 
@@ -1217,7 +1327,7 @@ function setSiteViewerContent(selectId) {
 	}
 	
 	if (siteView == "DistributionLine") {
-		var url = window.location.href + "las/" + siteData[id].name.toLowerCase() + "-" + siteData[id].feederNumber + "/index.html";
+		var url = window.location.href + "las/" + siteData[id].name.toLowerCase() + "-" + siteData[id].feederNumber + "-" + workOrderNumber + "/index.html";
 		dojo.xhrGet({
 			url: url,
 			handleAs: "text",
@@ -1225,11 +1335,19 @@ function setSiteViewerContent(selectId) {
 				dojo.query("#lasViewerOuterContent iframe")[0].src = url;
 				dojo.query(".potree-control").removeClass("active");
 				dojo.addClass(dojo.byId("potree-orbit-control"),"active");
+				lasDataAvailable = url;
+				updateSiteViewerControls();
 			},
 			error: function(error, ioargs){
 				dojo.query("#lasViewerOuterContent iframe")[0].src = "";
+				lasDataAvailable = null;
+				updateSiteViewerControls();
 			}
 		})
+	}
+	
+	if (siteView == "DistributionLine") {
+		updateSiteViewerControls();
 	}
 }
 
@@ -1290,15 +1408,18 @@ function populateSiteViewerContent(id, selectId) {
 		
 		//show map legend
 		dojo.style('map-legend', 'visibility', 'visible');
-		dojo.style('distribution-legend', 'display', distributionDisplay);
-		dojo.style('transmission-legend', 'display', transmissionDisplay);
 		
-		if (viewId == "tranmission") {
-			var player = videojs('transmission-video-player');
-			//var src = siteData[siteId].workOrders[workOrderNumber].summary.videoUrl;
-			var src = window.location.href + 'video/Video_Inspection_Line_1001.mp4'; // replace with actual value from summary object when included
+		dojo.query('.legend.distribution-' + authUserOrgKey).style('display', distributionDisplay);
+		dojo.query('.legend.transmission-default').style('display', transmissionDisplay);
+		
+		var player = videojs('inspection-video-player');
+		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
+		if (videos.length > 0) {
+			var src = videos[0];
 			var srcs = [ { "type": "video/mp4", "src": src } ];
 			player.src(srcs);
+		} else {
+			player.reset();
 		}
 	}
 }
@@ -1362,27 +1483,47 @@ function processSiteData(features, assets, selectId){
     windFeatureLayer.show();
     var summaryCriticality = summarizeCriticality();
 	
+	var data = siteData[siteId].workOrders[workOrderNumber].summary.store;
+	var item = data.items[selectId];
+	var uniqueId = item['uniqueId'];
+	var assetId = item[idField];
+	var criticality = item['criticality'];
+    turbineId = uniqueId;
+    turbineName = assetId;
+	
 	if (siteView == "DistributionLine") {
-		
 		populatePoleRecordTable(features, selectId);
-		//dojo.byId("turbines_total").innerHTML = features.length;
 		var idField = 'Pole ID';
 		resizeViewerPanel("siteViewer");
+		
+		var storeData = { 
+			label:"name", 
+			identifier:"id",
+			items: dojo.map(data.items, function(item) {
+				return { "name": item[idField], "id": item["uniqueId"] }; 
+			})
+		};
+		storeData.items.splice(0,0, { "name":"", "id":"" });
+		poleFilterSelect.set('store', new dojo.data.ItemFileReadStore({ data: storeData }) );
+		poleFilterSelect.set('value', '');
 	}
 	
 	if (siteView == "TransmissionLine") {
 		populateStructureRecordTable(features, selectId);
 		var idField = 'Structure Number';
 		resizeViewerPanel("transmissionViewer");
+		
+		var storeData = { 
+			label:"name", 
+			identifier:"id",
+			items: dojo.map(data.items, function(item) {
+				return { "name": item[idField], "id": item["uniqueId"] }; 
+			})
+		};
+		storeData.items.splice(0,0, { "name":"", "id":"" });
+		transmissionFilterSelect.set('store', new dojo.data.ItemFileReadStore({ data: storeData }) );
+		transmissionFilterSelect.set('value', '');
 	}
-	
-	var data = siteData[siteId].workOrders[workOrderNumber].summary.store;
-    var item = data.items[selectId];
-	var uniqueId = item['uniqueId'];
-	var assetId = item[idField];
-	var criticality = item['criticality'];
-    turbineId = uniqueId;
-    turbineName = assetId;
     
 	var turbine = dojo.filter(features, function(feature) { return feature.attributes['poleId'] == assetId; })[0];
 	if (!_.isUndefined(turbine)) {
@@ -1391,10 +1532,10 @@ function processSiteData(features, assets, selectId){
     
     //select record in the site viewer table (use interval to allow grid to fully load)	
     var checkGrid = setInterval(function(){
+		var gridId = (siteView == "DistributionLine") ? "site" : "transmission";
 		var grid = dijit.byId(gridId + "ViewerGrid");
         if (grid) {
             clearInterval(checkGrid);
-			var gridId = (siteView == "DistributionLine") ? "site" : "transmission";
             setSelectedRowInSiteViewerTable(turbineId, gridId);
 			
 			var item = grid.getItem(selectId);
@@ -1415,41 +1556,25 @@ function summarizeCriticality() {
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	var assets = (viewId == "distribution") ? "poleSummary" : "structureSummary";
 	var assetInspections = (viewId == "distribution") ? "poleInspectionSummary" : "structureInspectionSummary";
-	var property = (viewId == "distribution") ? "criticality" : "severity";
+	var property = (viewId == "distribution" && authUserOrgKey == "default") ? "criticality" : (viewId == "distribution" && authUserOrgKey == "default") ? "status" : "severity";
 	
 	var data = siteData[siteId].workOrders[workOrderNumber].summary.data;
 	var structures = siteData[siteId].workOrders[workOrderNumber].summary.objects[assets];
 	var inspections = siteData[siteId].workOrders[workOrderNumber].summary.objects[assetInspections];
 	var total = _.keys(data).length;
-	var criticalClass = {
-		"distribution":{
-			"1":0,
-			"2":0,
-			"3":0,
-			"4":0,
-			"5":0
-		},
-		"transmission":{
-			"1":0,
-			"2":0,
-			"3":0
-		}
-	}
 	
-	/* dojo.forEach(_.values(inspections), function(i) {
-		if (_.has(criticalClass[viewId], i[property])) {
-			criticalClass[viewId][i[property]] = criticalClass[viewId][i[property]] + 1;
-		}
-	}); */
+	var criticalClass = (siteView == "DistributionLine") ? dojo.clone(criticalClasses[viewId][authUserOrgKey]) : dojo.clone(criticalClasses[viewId]);
 	
+	var maxClass = _.max(_.keys(criticalClass));
 	dojo.forEach(data, function(i) {
-		if (_.has(criticalClass[viewId], i.assetInspection[property])) {
-			criticalClass[viewId][i.assetInspection[property]] = criticalClass[viewId][i.assetInspection[property]] + 1;
+		var critical = (i.assetInspection[property] > maxClass) ? maxClass : i.assetInspection[property];
+		if (_.has(criticalClass, critical)) {
+			criticalClass[critical] = criticalClass[critical] + 1;
 		}
 	});
 	
-	dojo.forEach(_.keys(criticalClass[viewId]), function(k) {
-		dojo.byId(viewId + "-class-legend-" + k).innerHTML = dojo.number.format(criticalClass[viewId][k]/total*100, { places:0 }) + "%";
+	dojo.forEach(_.keys(criticalClass), function(k) {
+		dojo.byId(viewId + "-class-legend-" + k).innerHTML = dojo.number.format(criticalClass[k]/total*100, { places:0 }) + "%";
 	});
 	
 	return criticalClass;
@@ -1466,6 +1591,7 @@ function switchViews(view) {
 	
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	dojo.removeClass(dojo.byId("siteViewer"), "distribution transmission");
+	dojo.byId("site-viewer-title").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "feeder" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "circuit" : "line";
 	dojo.addClass(dojo.byId("siteViewer"), viewId);
 	
 	dojo.removeClass(dojo.byId("bladeViewer"), "distribution transmission");
@@ -1475,9 +1601,26 @@ function switchViews(view) {
 	dojo.addClass(dojo.byId("headerLeftDiv"), viewId);
 	
 	dojo.query(".activeView").removeClass("activeView");
-	dojo.addClass(dojo.byId(viewId + "SelectorList"), ".activeView");
+	dojo.addClass(dojo.byId(viewId + "SelectorList"), "activeView");
+	renderWindSiteSelector();
 	
-	dojo.byId("pole-criticality-header").innerHTML = (viewId == "distribution") ? "Horizontal Pole Loading (%):" : "Damage Assessment:";
+	dojo.byId("site-name-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
+	var width = (viewId == "distribution") ? "65px" : "50px";
+	dojo.query("#site-name-header").style("width", width);
+	
+	var width = (viewId == "distribution") ? "200px" : "215px";
+	dojo.query("#siteId").style("width", width);
+	
+	dojo.byId("asset-id-header").innerHTML = (viewId == "distribution") ? "Pole ID:" : "Structure ID:";
+	var width = (viewId == "distribution") ? "65px" : "100px";
+	dojo.query("#asset-id-header").style("width", width);
+	
+	var width = (viewId == "distribution") ? "200px" : "165px";
+	dojo.query("#turbineId").style("width", width);
+	
+	dojo.byId("pole-criticality-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Horizontal Pole Loading (%):" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Pole Status:": "Damage Assessment:";
+	var width = (viewId == "distribution" && authUserOrgKey == "default") ? "200px" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "90px" : "165px";
+	dojo.query("#pole-criticality-header").style("width", width);
 	
 	var aiDisplay = (siteView == "TransmissionLine") ? "block" : "none";
 	dojo.style(dojo.byId("ai-button"), "display", aiDisplay);
@@ -1486,6 +1629,8 @@ function switchViews(view) {
 	var display = dojo.style(dojo.byId(prevViewId + "InspectorPanel"), "display");
 	dojo.query(".inspectorPanel").style("display", "none");
 	dojo.style(dojo.byId(viewId + "InspectorPanel"), "display", display);
+	
+	inspectionLineVideo.set("title", viewId + " line inspection video");
 	
 	setSiteViewerContent(0);
 	
@@ -1510,8 +1655,8 @@ function populateBladeViewerContent(feature, open) {
 	dojo.byId("turbineId").innerHTML = name;
 	dojo.byId("turbineLocation").innerHTML = x + " , " + y;
 	
-	dojo.byId("pole-criticality").innerHTML = (viewId == "distribution") ? attributes["horizontalLoadingPercent"] : "";
-	var backgroundColor = (viewId == "distribution") ? severityColors[criticality] : transmissionSeverityColors[criticality];
+	dojo.byId("pole-criticality").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? attributes["horizontalLoadingPercent"] : "";
+	var backgroundColor = (viewId == "distribution" && authUserOrgKey == "default") ? severityColors[criticality] : (viewId == "distribution" && authUserOrgKey == "Duke") ? dukeSeverityColors[criticality] : transmissionSeverityColors[criticality];
 	dojo.style(dojo.byId("pole-criticality"), "backgroundColor", backgroundColor);
 	
 	dojo.attr("siteId", "data-site-id", siteId);
@@ -1546,6 +1691,8 @@ function populateBladeViewerContent(feature, open) {
 				if (!_.isUndefined(summaryObject)) {
 					if (summaryProperty.length == 1) {
 						var property = summaryProperty[0];
+						
+						
 						if (property.indexOf("[]") >= 0) {
 							property = property.replace("[]","");
 							dojo.forEach(summaryObject[property], function(value, j) {
@@ -1556,7 +1703,14 @@ function populateBladeViewerContent(feature, open) {
 								i += 1;
 							});
 						} else {
+							
+							/* hack to replace reference to fplid */
+							property = property.replace("fplid", "utilityId");
+							field = field.replace("fplid", "utilityId");
+							/* hack end */
+							
 							var value = summaryObject[property];
+							
 							var label = translationJson.fields[field].label;
 							var tr = dojo.create("tr",{"className":(i%2==0) ? "even" : "odd"}, table);
 							dojo.create("td",{"innerHTML": label, "className":"label"}, tr);
@@ -1601,6 +1755,15 @@ function populateBladeViewerContent(feature, open) {
 				}
 			})
 		})
+		
+		var dataMergedDate = (!_.isUndefined(siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[name])) ? siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[name].dataMergedDate : null;
+		
+		var check = (!_.isNull(dataMergedDate)) ? '<i class="fa fa-check-circle dataMergedCheck" aria-hidden="true"></i>' : '<i class="fa fa-circle-o" aria-hidden="true"></i>';
+		dojo.byId("dataMergedCheck").innerHTML = check;
+		
+		var upload = (!_.isNull(dataMergedDate)) ? "uploaded on " + convertDate(dataMergedDate, "viewer") : "not uploaded";
+		dojo.byId("dataMergedDate").innerHTML = upload;
+		
 	}
 	
 	if (viewId == "transmission") {
@@ -1753,6 +1916,102 @@ function populateBladeViewerContent(feature, open) {
 		_.each(_.keys(z), function(i) {
 			dojo.style(i, "z-index", z[i])
 		})
+	}
+	
+	updateBladeViewerControls();
+}
+
+function updateSiteViewerControls() {
+	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
+	
+	if (viewId == "distribution") {
+		dojo.query("#siteInspectionReportButtonDiv .downloadButton").addClass("disabled");
+		
+		if (!_.isNull(lasDataAvailable)) {
+			dojo.removeClass(dojo.byId("siteVegetationEncroachment"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.vegitationEncroachmentGoogleEarthURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteFeederGoogleMapDownload"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.anomalyMapDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteAnomalyMapDownload"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.anomalyReportDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteAnomalyReportDownload"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.summaryReportDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteFeederReportDownload"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.feederMapDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteFeederMapDownload"), "disabled")
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.surveyReportDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("siteExcelDownload"), "disabled")
+		}
+
+		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
+		if (!_.isNull(videos) && (_.isArray(videos) && videos.length > 0)) {
+			dojo.removeClass(dojo.byId("siteFeederVideo"), "disabled")
+		}
+	}
+	
+	if (viewId == "transmission") {
+		dojo.query("#transmissionInspectionReportButtonDiv .downloadButton").addClass("disabled");
+		
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.summaryReportDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("transmissionExcelDownload"), "disabled")
+		}
+
+		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
+		if (!_.isNull(videos) || (_.isArray(videos) && videos.length > 0)) {
+			dojo.removeClass(dojo.byId("transmissionVideo"), "disabled")
+		}
+	}
+}
+
+function updateBladeViewerControls() {
+	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
+	
+	if (viewId == "distribution" && !_.isUndefined(turbineName)) {
+		dojo.query("#bladeInspectionReportButtonDiv .downloadButton").addClass("disabled");
+		
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].designReportURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("bladeInspectionReportDownload"), "disabled");
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisReportURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("bladeInspectionForemanDownload"), "disabled");
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisResultURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("bladeInspectionXmlDownload"), "disabled");
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].anomalyReportDownloadURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("bladeInspectionAnomalyDownload"), "disabled");
+		}
+
+		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].droneSurveySheetURL;
+		if (!_.isNull(url)) {
+			dojo.removeClass(dojo.byId("bladeInspectionDroneSurveyDownload"), "disabled");
+		}
 	}
 }
 
@@ -2022,15 +2281,18 @@ function getMapCentroid() {
 
 function populatePoleRecordTable(features, selectId){
 	
-    var gridFields = [
+    /* var gridFields = [
         {"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-		{"name":"poleId", "alias":"Pole ID", "width":"160px", "hidden": false },
-        {"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"150px", "hidden": false },
-		{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"162px", "hidden": false },
-    ];
+		{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false },
+        {"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false },
+		{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false },
+		{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false }
+    ]; */
+	
+	var authUserFields = gridFields["DistributionLine"][authUserOrgKey];
     
 	var fields = {}
-	dojo.forEach(gridFields, function (field) {
+	dojo.forEach(authUserFields, function (field) {
 		fields[field.name] = field.alias;
 	});
 	
@@ -2049,23 +2311,26 @@ function populatePoleRecordTable(features, selectId){
 		}
 		return ret;
 	}
-	store.comparatorMap["Horizontal Pole Loading"] = function(a,b) {
-		console.log(a);
-		var _a = (a == " -- ") ? 0 : a;
-		var _b = (b == " -- ") ? 0 : b;
-		var ret = 0;
-		if (_a > _b) {
-			ret = 1;
+	
+	if (authUserOrgKey == "default") {
+		store.comparatorMap["Horizontal Pole Loading"] = function(a,b) {
+			console.log(a);
+			var _a = (a == " -- ") ? 0 : a;
+			var _b = (b == " -- ") ? 0 : b;
+			var ret = 0;
+			if (_a > _b) {
+				ret = 1;
+			}
+			if (_a < _b) {
+				ret = -1;
+			}
+			return ret;
 		}
-		if (_a < _b) {
-			ret = -1;
-		}
-		return ret;
 	}
 	
 	if (dijit.byId("siteViewerGrid") == undefined) {
 		var columns = [];
-		dojo.forEach(gridFields, function(field){
+		dojo.forEach(authUserFields, function(field){
 			var header = {};
 			header.field = fields[field.name];
 			header.name = fields[field.name];
@@ -2079,7 +2344,10 @@ function populatePoleRecordTable(features, selectId){
 				header.formatter = function(val, rowIdx, cell) {
 					var severity = _.first(this.grid.getItem(rowIdx)["criticality"]);
 					var uniqueId = _.first(this.grid.getItem(rowIdx)["uniqueId"]);
-					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + severityColors[severity] + ';">i</div></div>' 
+					
+					var colors = (authUserOrgKey == "default") ? severityColors : dukeSeverityColors;
+					
+					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + colors[severity] + ';">i</div></div>' 
 				};
 			}
 			if (header.field == 'Horizontal Pole Loading') {
@@ -2139,9 +2407,13 @@ function populatePoleRecordTable(features, selectId){
 		
 		dojo.connect(grid, "onCellMouseOver", function(e){
 			if (this.getItem(e.rowIndex)) {
-				if (e.cell.field == "criticality") {
+				if (e.cell.field == "criticality" && authUserOrgKey == "default") {
 					var content = 'Horizontal Pole Loading (%): ' + this.getItem(e.rowIndex)["Horizontal Pole Loading"] + '<br>';
 					content += 'Click to review the inspection of this pole in the Pole Viewer';
+					showToolTip(e, content);
+				}
+				if (e.cell.field == "criticality" && authUserOrgKey == "Duke") {
+					var content = 'Click to review the inspection of this pole in the Pole Viewer';
 					showToolTip(e, content);
 				}
 			}
@@ -2167,14 +2439,16 @@ function populatePoleRecordTable(features, selectId){
 
 function populateStructureRecordTable(features, selectId){
 	
-    var gridFields = [
+    /* var gridFields = [
         {"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
 		{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false },
-        {"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false },
-    ];
+        {"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false }
+    ]; */
+	
+	var authUserFields = gridFields["TransmissionLine"];
     
 	var fields = {}
-	dojo.forEach(gridFields, function (field) {
+	dojo.forEach(authUserFields, function (field) {
 		fields[field.name] = field.alias;
 	});
 	
@@ -2196,7 +2470,7 @@ function populateStructureRecordTable(features, selectId){
 	
 	if (dijit.byId("transmissionViewerGrid") == undefined) {
 		var columns = [];
-		dojo.forEach(gridFields, function(field){
+		dojo.forEach(authUserFields, function(field){
 			var header = {};
 			header.field = fields[field.name];
 			header.name = fields[field.name];
@@ -2294,22 +2568,10 @@ function populateStructureRecordTable(features, selectId){
 
 function createGridDataStore(id, workOrder, data, type) {
 	
-	var gridFields = {
-		"DistributionLine": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-			{"name":"poleId", "alias":"Pole ID", "width":"160px", "hidden": false },
-			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"150px", "hidden": false },
-			{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"162px", "hidden": false }
-		],
-		"TransmissionLine": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-			{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false },
-			{"name":"dateOfInspection", "alias":"Inspection Date", "width":"231px", "hidden": false }
-		]
-	};
+	var authUserFields = (type == "DistributionLine") ? gridFields[type][authUserOrgKey] : gridFields[type];
     
 	var fields = {}
-	dojo.forEach(gridFields[type], function (field) {
+	dojo.forEach(authUserFields, function (field) {
 		fields[field.name] = field.alias;
 	});
 	
@@ -2320,9 +2582,19 @@ function createGridDataStore(id, workOrder, data, type) {
 		
 		if (type == "DistributionLine") {
 			item[fields['poleId']] = asset.utilityId;
-			item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.criticality)) ? asset.assetInspection.criticality : "NA";
-			item[fields['horizontalLoadingPercent']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.horizontalLoadingPercent)) ? asset.assetInspection.horizontalLoadingPercent : " -- ";
 			item[fields['dateOfAnalysis']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dateOfAnalysis)) ? convertDate(asset.assetInspection.dateOfAnalysis, "viewer") : " -- ";
+			
+			if (authUserOrgKey == "default") {
+				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.criticality)) ? asset.assetInspection.criticality : "NA";
+				item[fields['horizontalLoadingPercent']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.horizontalLoadingPercent)) ? asset.assetInspection.horizontalLoadingPercent : " -- ";
+				item[fields['dataMergedDate']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dataMergedDate)) ? convertDate(asset.assetInspection.dataMergedDate, "viewer") : " -- ";
+			}
+			
+			if (authUserOrgKey == "Duke") {
+				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "NA";
+				item[fields['status']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "Pending";
+			}
+			
 		}
 		
 		if (type == "TransmissionLine") {
@@ -2366,6 +2638,8 @@ function getAndSetBladeViewerAsset(item, open) {
 	var ids = dojo.map(features, function(feature){ return feature.attributes['uniqueId'] });
 	var index = dojo.indexOf(ids, id);
 	var graphic = features[index];
+	
+	console.log(item.criticality);
 
 	if (item.criticality != "0") {
 		populateBladeViewerContent(graphic, open);
@@ -2425,10 +2699,10 @@ function filterSiteViewerRecords(value){
 	data.items = dojo.clone(items);
     
     dojo.forEach(windFeatureLayer.graphics, function(graphic) { 
-        var alpha = (dojo.indexOf(ids, graphic.attributes['poleId']) == -1) ? 0.1 : 1.0;
+        var alpha = (dojo.indexOf(ids, graphic.attributes['poleId']) == -1) ? 0.5 : 1.0;
 		
 		if (!_.isNull(graphic.getNode())) {
-			dojo.attr(graphic.getNode(), "opacity", alpha);
+			dojo.style(graphic.getNode(), "opacity", alpha);
 		}
         
         /* var fill = graphic.symbol.getFill();
@@ -2526,17 +2800,10 @@ function clearFilterSiteViewerRecords(){
 function clearFilterSiteViewerFeatures() {
 	dojo.forEach(windFeatureLayer.graphics, function(graphic) {
 		var alpha = 1.0;
+		var alpha = (graphic.attributes["subStationId"] == siteId) ? 1 : 0.1;
 		if (!_.isNull(graphic.getNode())) {
-			dojo.attr(graphic.getNode(), "opacity", alpha);
+			dojo.style(graphic.getNode(), "opacity", alpha);
 		}
-		
-        /* var fill = graphic.symbol.getFill();
-        fill.a = 1.0;
-        graphic.symbol.setColor(fill);
-        
-        var stroke = graphic.symbol.getStroke();
-        stroke.color.a = 1.0;
-        graphic.symbol.setOutline(stroke); */
 		var select = turbineName == graphic.attributes['poleId'];
 		setSymbologyForFeature(graphic, select);
     });
@@ -2730,207 +2997,6 @@ function setBladeViewerContent() {
         clearHighlightSymbol();
         setSymbologyForFeature(features[index], true);
     }
-}
-
-function exportInspectionEventImages(site, workOrder, turbine) {
-    var data = (turbine) ? { "siteId": siteId, "orderNumber": workOrder, "assetId": turbine  } : { "siteId": siteId, "orderNumber": workOrder };
-	var progressId = (turbine) ? "blade" : "site"
-    dojo.xhrPost({
-        url: windAmsDwVestasUrl + 'export/resources/inspectionEvent',
-        handleAs: "json",
-        headers: {
-            "Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-        },
-        postData: JSON.stringify(data),
-        load: function(response) {
-			
-			dijit.byId(progressId + "InspectionDownloadProgressBar").set("value", 0);
-            var css = (progressId == "blade") ? { "display":"block", "right":"10px" } : { "display":"block" };
-            dojo.style(progressId + "InspectionDownloadProgress", css);
-            var uuid = response.uuid;
-            checkExportImagesStatus(uuid, progressId);
-        },
-        error: function(error){
-            console.log(error);
-            dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving images from the server. <br>" + error.message;
-            dijit.byId("dataWarehouseError").show();
-        }
-    });
-
-}
-
-function checkExportImagesStatus(uuid, progressId) {        
-    dojo.xhrGet({
-        url: windAmsDwVestasUrl + 'export/' + uuid + '/status',
-        handleAs: "json",
-        headers: {
-            "Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-        },
-        load: function(response) {
-            console.log(response.status);
-            if (response.status == "Processing") {
-                downloadImagesProgress(response, progressId);
-                window.setTimeout(function() {
-                    checkExportImagesStatus(response.uuid, progressId);
-                }, 1000);
-            } else if (response.status == "Completed") {
-                getExportImages(uuid, progressId);
-                window.setTimeout(function() {
-                   dojo.style(progressId + "InspectionDownloadProgress", "display", "none");
-                }, 2000);
-            } else {
-                console.log(response);
-                dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving images from the server. <br>";
-                dijit.byId("dataWarehouseError").show();
-				
-				dojo.byId(progressId + "InspectionDownloadStatus").innerHTML = "Error ...";
-				dijit.byId(progressId + "InspectionDownloadProgressBar").set("value", 0);
-				window.setTimeout(function() {
-				   dojo.style(progressId + "InspectionDownloadProgress", "display", "none");
-				}, 2000)
-            } 
-        },
-        error: function(error){
-            console.log(error);
-            dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving images from the server. <br>" + error.message;
-            dijit.byId("dataWarehouseError").show();
-			
-			dojo.byId(progressId + "InspectionDownloadStatus").innerHTML = "Error ...";
-			dijit.byId(progressId + "InspectionDownloadProgressBar").set("value", 0);
-			window.setTimeout(function() {
-			   dojo.style(progressId + "InspectionDownloadProgress", "display", "none");
-			}, 2000)
-        }
-    });
-}
-
-function getExportImages(uuid, progressId) {
-    var url = windAmsDwVestasUrl + 'export/' + uuid;
-    dojo.attr("downloadFrame", "src", url);
-    dojo.byId(progressId + "InspectionDownloadStatus").innerHTML = "Download Complete";
-    dijit.byId(progressId + "InspectionDownloadProgressBar").set("value", 1);
-}
-
-function downloadImagesProgress(response, progressId) {
-    var total = response.objectCount;
-    var prepCount = response.objectsPrepared;
-    var zipCount = response.objectsZipped;
-    
-    var text = "Preparing (0/0) ...";
-    var value = 0;
-	if (total > 0) {
-		if (prepCount/total < 1) {
-			text = "Preparing (" + prepCount + "/" + total + ") ...";
-			value = prepCount/total;
-		} else {
-			text = "Zipping (" + zipCount + "/" + total + ") ...";
-			value = zipCount/total;
-		}
-	}
-    dojo.byId(progressId + "InspectionDownloadStatus").innerHTML = text;
-    dijit.byId(progressId + "InspectionDownloadProgressBar").set("value", value);    
-}
-
-
-function exportTurbineInspectionReport(workOrder, turbine, format){
-	if (format == "excel") {
-		var url = windAmsDwVestasUrl + "report/bladeInspectionReport?siteId=" + siteId + "&assetId=" + turbineId + "&orderNumber=" + workOrderNumber;
-		window.open(url, '_blank');
-	} else {
-		var data = { "orderNumber": workOrderNumber, "assetId": turbineId  };
-		dojo.xhrPost({
-			url: windAmsDwVestasUrl + 'report/turbineInspectionReport',
-			handleAs: "json",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": JSON.stringify(authRequest)
-			},
-			postData: JSON.stringify(data),
-			load: function(response) {
-				dijit.byId("bladeInspectionDownloadProgressBar").set("value", 0);
-				dojo.style("bladeInspectionDownloadProgress", { "display":"block", "right":"-20px" });
-				var uuid = response.uuid;
-				checkExportReportStatus(uuid);
-			},
-			error: function(error){
-				console.log(error);
-				dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving resource from the server. <br>" + error.message;
-				dijit.byId("dataWarehouseError").show();
-			}
-		});
-
-	}
-}
-
-function checkExportReportStatus(uuid) {        
-    dojo.xhrGet({
-        url: windAmsDwVestasUrl + 'report/' + uuid + '/status',
-        handleAs: "json",
-        headers: {
-            "Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-        },
-        load: function(response) {
-            console.log(response.status);
-            if (response.status == "Processing") {
-                downloadReportProgress(response);
-                window.setTimeout(function() {
-                    checkExportReportStatus(response.uuid);
-                }, 1000);
-            } else if (response.status == "Completed") {
-                getExportReport(uuid);
-                window.setTimeout(function() {
-                   dojo.style("bladeInspectionDownloadProgress", "display", "none");
-                }, 2000);
-            } else {
-                console.log(response);
-                dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving report from the server. <br>";
-                dijit.byId("dataWarehouseError").show();
-				
-				dojo.byId("bladeInspectionDownloadStatus").innerHTML = "Error ...";
-				dijit.byId("bladeInspectionDownloadProgressBar").set("value", 0);
-				window.setTimeout(function() {
-				   dojo.style("bladeInspectionDownloadProgress", "display", "none");
-				}, 2000)
-            } 
-        },
-        error: function(error){
-            console.log(error);
-            dojo.byId("dataWarehouseErrorContent").innerHTML = "Error retrieving report from the server. <br>" + error.message;
-            dijit.byId("dataWarehouseError").show();
-			
-			dojo.byId("bladeInspectionDownloadStatus").innerHTML = "Error ...";
-			dijit.byId("bladeInspectionDownloadProgressBar").set("value", 0);
-			window.setTimeout(function() {
-			   dojo.style("bladeInspectionDownloadProgress", "display", "none");
-			}, 2000)
-        }
-    });
-}
-
-function getExportReport(uuid) {
-    var url = windAmsDwVestasUrl + 'report/' + uuid + '/download';
-    dojo.attr("downloadFrame", "src", url);
-    dojo.byId("bladeInspectionDownloadStatus").innerHTML = "Download Complete";
-    dijit.byId("bladeInspectionDownloadProgressBar").set("value", 1);
-}
-
-function downloadReportProgress(response) {
-    var total = response.statusCount;
-    var prepCount = response.statusCompleted;
-    
-    var text = "Preparing (0/0) ...";
-    var value = 0;
-	if (total > 0) {
-		if (prepCount/total < 1) {
-			text = "Preparing (" + prepCount + "/" + total + ") ...";
-			value = prepCount/total;
-		}
-	}
-    dojo.byId("bladeInspectionDownloadStatus").innerHTML = text;
-    dijit.byId("bladeInspectionDownloadProgressBar").set("value", value);    
 }
 
 function createBugReportForm() {
@@ -3177,411 +3243,4 @@ function createAboutDialog() {
 function openAboutDialog(){
     about.show();
     menuDropdown.hide();
-}
-
-function getAllSiteData(name, orderNumber) {
-	
-	if (sitesToProcess.length <= 1) {
-		dojo.query(".login-progress-tracker").style("display", "none");
-		dojo.style("data-retrieve-message", "margin-bottom", "15px");
-		siteDownloadProgressTable = dojo.create("table", {
-			class:"siteDownloadProgress"
-		}, dojo.byId("loginProgressContent"));
-	}
-	var tr = dojo.create("tr", {}, siteDownloadProgressTable);
-	var td = dojo.create("td", {
-		innerHTML:"" + siteData[name].name + " (" + orderNumber +")"
-	}, tr);
-	var td = dojo.create("td", {
-		class:"site-download-wait",
-		innerHTML:"<i class='fa fa-circle-o-notch fa-spin'></i>"
-	}, tr);
-	loginProgress.resize();
-	
-	var site = siteData[name].id;
-	var data = {
-		"siteId": site,
-		"orderNumber": orderNumber
-		//status:"Released"
-	};
-	var assetInspectionDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "assetInspection/search",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		postData: JSON.stringify(data),
-		load: function(response) {
-			return response;
-		},
-		error: function(error){
-			console.log(error);
-		}
-	});
-
-	var data = { 
-		"siteId":site
-	};
-	var assetComponentDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "component/search",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		postData: JSON.stringify(data),
-		load: function(response) {
-			return response;
-		},
-		error: function(error){
-			console.log(error);
-		}
-	});
-
-	var data = { 
-		"siteId":site,
-		"orderNumber": orderNumber
-	};
-	var assetComponentInspectionDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "componentInspection/search",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		postData: JSON.stringify(data),
-		load: function(response) {
-			return response;
-		},
-		error: function(error){
-			console.log(error);
-		}
-	});
-
-	var data = { 
-		"siteId":site,
-		"orderNumber":orderNumber
-	};
-	var assetbladeRepairRetrofitDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "bladeRepairRetrofit/search",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		postData: JSON.stringify(data),
-		load: function(response) {
-			return response;
-		},
-		error: function(error){
-			console.log(error);
-		}
-	});
-
-	var data = {
-		"siteId": site,
-		"orderNumber": orderNumber
-	};
-	var inspectionEventDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "inspectionEvent/search",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		postData: JSON.stringify(data),
-		load: function(response) {
-			return response;
-		},
-		error: function(error){
-			console.log(error);
-		}
-	});
-
-	var deferreds = [assetInspectionDeferred, assetComponentDeferred, assetComponentInspectionDeferred, assetbladeRepairRetrofitDeferred,inspectionEventDeferred];
-	var deferredList = new dojo.DeferredList(deferreds);
-	deferredList.then(function(results) {
-		var assetInspections = results[0][1];
-		
-		var components = {};
-		var componentData = results[1][1];
-		var componentInspectionStatusData = results[2][1];
-		var bladeRepairRetrofitData = results[3][1];
-		var inspectionEventsData = results[4][1];
-		
-		//filter the componentData based on componentInspectionStatusData (i.e., remove if object does not exist in inspection status)
-		var componentInspectionStatusDataIds = dojo.map(componentInspectionStatusData, function(status) { return status.componentId; })
-		componentData = dojo.filter(componentData, function(item) { return dojo.indexOf(componentInspectionStatusDataIds, item.id) >= 0 ; })
-		
-		dojo.forEach(componentData, function(component) {
-			var componentInspection = _.first(dojo.filter(componentInspectionStatusData, function(item) { return item.componentId == component.id; } ));
-			
-			if (!components[component.assetId]) {
-				components[component.assetId] = {};
-				components[component.assetId]["ids"] = {};
-				components[component.assetId]["inspectionStatus"] = {};
-				components[component.assetId]["component"] = {};
-				components[component.assetId]["bladeRepairRetrofit"] = {};
-			} 
-			components[component.assetId]["ids"][component.id] = component.type;
-			components[component.assetId]["component"][component.id] = component;
-			components[component.assetId]["inspectionStatus"][component.id] = (_.isUndefined(componentInspection)) ? null : componentInspection;
-			
-			var bladeRepairRetrofit = _.first(dojo.filter(bladeRepairRetrofitData, function(item) { return item.componentId == component.id; } ));
-			components[component.assetId]["bladeRepairRetrofit"][component.id] = (_.isUndefined(bladeRepairRetrofit)) ? null : bladeRepairRetrofit;
-		});
-		
-		var assets = [];
-		var inspectionEventDeferreds = [];
-		assetJsonResponse = dojo.filter(authUserAssets, function(feature) { return feature.siteId == site; })
-		dojo.forEach(assetJsonResponse, function(item){
-			var assetInspection = dojo.filter(assetInspections, function(inspection){ return inspection.assetId == item.id; })[0];
-			if (!_.isUndefined(assetInspection)) {
-				var asset = {
-					id : item.id,
-					name : item.name,
-					siteId : site,
-					siteName : name,
-					dateOfInspection : assetInspection.dateOfInspection,
-					make : item.make,
-					model : item.model,
-					onYear : item.dateOfInstall,
-					serialNumber : item.serialNumber,
-					severityValues: [],
-					severityMax : 0,
-					inspectionEvents : {
-						loaded: false,
-						events:[]
-					},
-					inspectionEventResources : {
-						loaded : false,
-						polys : []
-					},
-					components: (components[item.id]) ? components[item.id] : null,
-					type: item.type,
-					attributes: (_.has(item, "attributes")) ? item.attributes : null,
-					assetInspection: assetInspection
-				};
-				
-				var severityValues = [];
-				if (!_.isNull(asset.components) && !_.isNull(asset.components.inspectionStatus)) {
-					var severityValues = dojo.map(_.values(asset.components.inspectionStatus), function(inspectionEvent){ 
-						var overallBladeCondition = (_.has(inspectionEvent.attributes, "overallBladeCondition")) ? parseInt(inspectionEvent.attributes.overallBladeCondition) : 0;
-						overallBladeCondition = (overallBladeCondition < 0) ? 0 : overallBladeCondition;
-						return overallBladeCondition; 
-					});
-				}
-				
-				var inspectionEvents = dojo.filter(inspectionEventsData, function(event) { return event.assetId == asset.id });
-				if (inspectionEvents.length > 0) {
-					asset.inspectionEvents.loaded = true;
-					asset.inspectionEvents.events = inspectionEvents;
-					var severityValues = dojo.map(inspectionEvents, function(inspectionEvent){ return inspectionEvent.severity; });
-					
-				}
-				severityValues = _.map(severityValues, function(value) { return (_.isNaN(value) || value > 5 || value < 0) ? 0 : value; })
-				asset.severityValues = severityValues;
-				asset.severityMax = (severityValues.length > 0) ? _.max(severityValues) : 0;
-				assets.push(asset);
-				
-				if (!_.isNull(asset.components) && !_.isNull(asset.components.inspectionStatus)) {
-					checkInspectionStatus(asset);
-				}
-				
-			}
-		});
-		siteData[name].workOrders[orderNumber].data = assets;
-		sitesAreProcess.push(name);
-		
-		td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>"
-		
-		if (sitesToProcess.length == sitesAreProcess.length) {
-			
-			windFeatureLayer.show();
-			windTileLayer.hide();
-			
-			window.setTimeout(function(){
-				loginProgress.hide();
-				
-				window.setTimeout(function(){
-					dojo.query(".login-progress-tracker").style("display", "block");
-					loginProgress.set("title","Logging in ...")
-					dojo.byId("loginProgressContent").innerHTML = "";
-					dojo.style("loginProgressContent", "width", "auto;");
-				}, 2000)
-				
-			}, 2000)
-			
-			dojo.forEach(_.keys(siteData), function(s) {
-				dojo.forEach(_.keys(siteData[s].workOrders), function(w) {
-					var assets = siteData[s].workOrders[w].data;
-					var features = dojo.filter(windFeatureLayer.graphics, function(feature) { return feature.attributes["SITE_ID"] == siteData[s].id; })
-					var ids = _.pluck(assets, 'id');
-					
-					dojo.forEach(features, function(feature){
-						var markerSymbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_CIRCLE, 10, new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID, new dojo.Color([255,255,255,1]), 1), new dojo.Color([200,200,200,1]));
-						feature.attributes["SITE_NAME"] = s; 
-						
-						if (_.contains(ids, feature.attributes["UNIQUE_ID"])){
-							
-							var index = _.indexOf(ids, feature.attributes["UNIQUE_ID"]);
-							
-							var year = (assets[index].dateOfInspection) ? parseInt(assets[index].dateOfInspection.slice(0,4)) : 1000;
-							if (year >= 1900) {
-								feature.attributes["INSPECTION_DATE"] = convertDate(assets[index].dateOfInspection, 'viewer');
-							}
-							feature.attributes["SeverityScore"] = assets[index].severityMax;
-							feature.attributes["InspectionEvents"] = assets[index].inspectionEvents.events.length;
-							
-							function getStatus(assets, index, blade, status) {
-								var timestamp = null;
-								var inspectionStatusObject = assets[index].components.inspectionStatus[_.invert(assets[index].components.ids)[blade]];
-								if (!_.isNull(inspectionStatusObject)) {
-									var inspectionStatusHistory = inspectionStatusObject.statusHistory;
-									var inspectionStatus = _.first(dojo.filter(inspectionStatusHistory, function(item) { return item.status == status; }));
-									timestamp = inspectionStatus.timestamp;
-								}
-								return timestamp;
-							}
-							
-							var componentIds = (!_.isNull(assets[index].components)) ? assets[index].components.ids : {};
-							var statusStart = dojo.map(_.keys(_.invert(componentIds)).sort(), function(blade) {
-								return getStatus(assets, index, blade, "InspectionStarted");
-							});
-							statusStart = _.without(statusStart, null);
-							
-							var statusComplete = dojo.map(_.keys(_.invert(componentIds)).sort(), function(blade) {
-								return getStatus(assets, index, blade, "InspectionCompleted");
-							});
-							statusComplete = _.without(statusComplete, null);
-							
-							var InspectionCompleted = " -- ";
-							if (statusComplete.length > 0 && statusComplete.length == _.keys(_.invert(componentIds)).length) {
-								InspectionCompleted = (_.last(statusComplete.sort()) < "20000101T000000") ? feature.attributes["INSPECTION_DATE"] : convertDate(_.first(_.last(statusComplete.sort()).split("T")), "viewer");
-							}
-							feature.attributes["InspectionCompleted"] = InspectionCompleted;
-							
-							var InspectionStarted = " -- ";
-							if (statusStart.length > 0) {
-								InspectionStarted = (_.first(statusStart.sort()) < "20000101T000000") ? feature.attributes["INSPECTION_DATE"] : convertDate(_.first(_.first(statusStart.sort()).split("T")), "viewer");
-							}
-							feature.attributes["InspectionStarted"] = InspectionStarted;
-							
-							feature.attributes["InspectionStatus"] = (feature.attributes["InspectionCompleted"] != " -- ") ? "Complete (" + feature.attributes["InspectionCompleted"] + ")" : (feature.attributes["InspectionStarted"] != " -- ") ? "Started (" + feature.attributes["InspectionStarted"] + ")": " -- ";
-							
-							feature.attributes["InspectionEvents"] = (feature.attributes["InspectionStarted"] != " -- ") ? assets[index].inspectionEvents.events.length : " -- "; 
-							
-							dojo.forEach(["BladeA", "BladeB", "BladeC"], function(blade) {
-								feature.attributes[blade] = (_.isUndefined(_.invert(componentIds)[blade])) ? " -- " : (!_.isNull(getStatus(assets, index, blade, "InspectionCompleted"))) ? "Complete" : (!_.isNull(getStatus(assets, index, blade, "InspectionStarted"))) ? "In Process": " -- ";
-							});
-							
-							var color = new dojo.Color(severityColors[feature.attributes["SeverityScore"]]);
-							color.a = 1.0;
-							markerSymbol.setColor(color);
-							
-						} else {
-							feature.attributes["INSPECTION_DATE"] = " -- ";
-							feature.attributes["SeverityScore"] = 0;
-							feature.attributes["InspectionEvents"] = " -- ";
-							feature.attributes["BladeA"] = " -- ";
-							feature.attributes["BladeB"] = " -- ";
-							feature.attributes["BladeC"] = " -- ";
-							feature.attributes["InspectionStarted"] = " -- ";
-							feature.attributes["InspectionCompleted"] = " -- ";
-							feature.attributes["InspectionStatus"] = " -- ";
-						}
-						
-						//var symbology = setSymbologyForFeature(feature, false);
-						feature.setSymbol(markerSymbol);
-					});
-					
-				})
-				
-			})
-			
-			dojo.connect(map, 'onUpdateEnd', function(){
-				dojo.style("mapProgressBar", { "display":"none" });
-			});
-			
-			renderWindSiteSelector();
-			
-
-			var extent = getQueryResultsExtent(windFeatureGraphics);
-			map.setExtent(extent.expand(1.5),true);
-			authExtent = extent;
-			
-			var names = _.keys(siteData);
-			if (names.length == 1) {
-				window.setTimeout(function(){
-					var name = _.first(names);
-					siteName = name;
-					siteId = siteData[name].id;
-					dijit.byId('siteViewerDropDown').set('value', name);
-					updateWorkOrderDropdown(name);
-					openViewerPanel("siteViewer"); 
-				}, 1000);
-			}
-		}
-		
-		
-		
-	})
-}
-
-function checkInspectionStatus(feature) {
-	var componentInspections = feature.components.inspectionStatus;
-	
-	var asset = {
-		"id": feature.id,
-		"name":feature.name,
-		"siteId": feature.siteId,
-		"workOrder": feature.assetInspection.orderNumber,
-		"severity":feature.severityMax,
-		"status":null
-	}
-	
-	var statusHistory = [];
-	
-	var inspectionStarted = [];
-	var inspectionCompleted = [];
-	var inspectionSubmitted = [];
-	var inspectionApproved = [];
-	
-	dojo.forEach(_.keys(componentInspections), function(component) {
-		dojo.forEach(componentInspections[component].statusHistory, function(s) {
-			if (!_.isNull(s.timestamp)) {
-				
-				if (s.status == "InspectionStarted") {
-					inspectionStarted.push(true);
-				}
-				if (s.status == "InspectionSubmitted") {
-					inspectionSubmitted.push(true);
-				}
-				if (s.status == "InspectionApproved") {
-					inspectionApproved.push(true);
-				}
-				if (s.status == "InspectionCompleted") {
-					inspectionCompleted.push(true);
-				}
-			} 
-		})
-	})
-
-	if (inspectionSubmitted.length == _.keys(componentInspections).length && inspectionSubmitted.length > 0) {
-		asset.status = "Submitted";
-		inspectionStatus["InspectionSubmitted"].push(asset);
-	}
-	if (inspectionApproved.length == _.keys(componentInspections).length && inspectionApproved.length > 0) {
-		asset.status = "Approved";
-		inspectionStatus["InspectionApproved"].push(asset);
-	}
-	if (inspectionCompleted.length == _.keys(componentInspections).length && inspectionCompleted.length > 0) {
-		asset.status = "Completed";
-		inspectionStatus["InspectionCompleted"].push(asset);
-	}
-	if ((inspectionCompleted.length != _.keys(componentInspections).length || inspectionCompleted.length == 0) && (inspectionSubmitted.length != _.keys(componentInspections).length || inspectionSubmitted.length == 0) && (inspectionApproved.length != _.keys(componentInspections).length || inspectionApproved.length == 0)) {
-		asset.status = "In Process";
-		inspectionStatus["InspectionInProcess"].push(asset);
-	}
 }

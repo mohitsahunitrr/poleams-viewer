@@ -9,11 +9,11 @@ function sendServerRequest(method,url, data) {
 	switch(method){
 		case "get":
 			var deferred = dojo.xhrGet({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				load: function(response) {
 					console.log(response);
@@ -27,11 +27,11 @@ function sendServerRequest(method,url, data) {
 			break;
 		case "put":
 			var deferred = dojo.xhrPut({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				putData: data,
 				load: function(response) {
@@ -47,11 +47,11 @@ function sendServerRequest(method,url, data) {
 		case "post":
 			// reminder that must post full json object if updating a resource's data
 			var deferred = dojo.xhrPost({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				postData: data,
 				load: function(response) {
@@ -66,11 +66,11 @@ function sendServerRequest(method,url, data) {
 			break;
 		case "delete":
 			var deferred = dojo.xhrDelete({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				load: function(response) {
 					console.log(response);
@@ -135,9 +135,11 @@ function createInspectionDisplay() {
 	inspectionEventTypeDropdown.startup();
 	
 	var options = [{ label: "--", value: "" }];
-	dojo.forEach(translationJson.fields["inspectionEvent.findingType"].listValues, function(field) {
-		options.push({ label: field.label, value: field.value });
-	})
+	if (_.has(translationJson.fields, "inspectionEvent.findingType")) {
+		dojo.forEach(translationJson.fields["inspectionEvent.findingType"].listValues, function(field) {
+			options.push({ label: field.label, value: field.value });
+		})
+	}
 	var findingTypeDropdown =  new dijit.form.Select({
         id: "findingTypeDropdown",
         options: options,
@@ -162,9 +164,11 @@ function createInspectionDisplay() {
 	findingTypeDropdown.startup();
 	
 	var options = [{ label: "--", value: "" }];
-	dojo.forEach(translationJson.fields["inspectionEvent.position"].listValues, function(field) {
-		options.push({ label: field.label, value: field.value });
-	})
+	if (_.has(translationJson.fields, "inspectionEvent.position")) {
+		dojo.forEach(translationJson.fields["inspectionEvent.position"].listValues, function(field) {
+			options.push({ label: field.label, value: field.value });
+		})
+	}
 	var positionTypeDropdown =  new dijit.form.Select({
         id: "positionTypeDropdown",
         options: options,
@@ -639,11 +643,11 @@ function getTransmissionInspectionEvents(site, workOrder, assetId) {
 	/* post request for inspectionEvents associated with a site, workOrder, and asset */
 	var data = { "siteId":site, "assetId":assetId, "orderNumber": workOrder };
 	var deferredInspectionEventQuery = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "inspectionEvent/search",
+		url: serviceApiUrl + "inspectionEvent/search",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		postData: JSON.stringify(data),
 		load: function(response) {
@@ -680,11 +684,11 @@ function getInspectionEventResources(site, workOrder, assetId, inspectionEventsJ
 	dojo.forEach(inspectionEventsJsonResponse, function(inspectionEvent) {
 		var data = { "siteId":site, "assetId":assetId, "orderNumber":workOrder, "inspectionEventId": inspectionEvent.id  };
 		var resourceDeferred = dojo.xhrPost({
-			url: windAmsDwVestasUrl + "inspectionEventResource/search",
+			url: serviceApiUrl + "inspectionEventResource/search",
 			handleAs: "json",
 			headers: {
 				"Content-Type": "application/json",
-				"Authorization": JSON.stringify(authRequest)
+				"Authorization": "Bearer " + accessToken
 			},
 			postData: JSON.stringify(data),
 			load: function(response) {
@@ -1537,11 +1541,11 @@ function saveInspectionEventEdits(exit){
 		// remove any inspection event resources (hotspot) if deleted by removing an image resource from the event
 		dojo.forEach(tempInspectionData.resourcesToDelete, function(inspectionEventResourceId) {
 			dojo.xhrDelete({
-				url: windAmsDwVestasUrl + 'inspectionEventResource/' + inspectionEventResourceId,
+				url: serviceApiUrl + 'inspectionEventResource/' + inspectionEventResourceId,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				}
 			});
 			removeSiteDataInspectionEventResource(inspectionEventResourceId)
@@ -1630,11 +1634,11 @@ function saveInspectionEventEdits(exit){
                     imageObject.polys.splice(hotspotIndex,1); 
                     
                     var deleteInspectionEventResourceDeferred = dojo.xhrDelete({
-                        url: windAmsDwVestasUrl + 'inspectionEventResource/' + hotspot.inspectionEventResourceId,
+                        url: serviceApiUrl + 'inspectionEventResource/' + hotspot.inspectionEventResourceId,
                         handleAs: "json",
                         headers: {
                             "Content-Type": "application/json",
-							"Authorization": JSON.stringify(authRequest)
+							"Authorization": "Bearer " + accessToken
                         }
                     });
                     removeSiteDataInspectionEventResource(hotspot.inspectionEventResourceId);
@@ -1697,22 +1701,22 @@ function saveInspectionEventEdits(exit){
 
 function deleteInspectionEvent() {
     var getInspectionEventResourcesDeferred = dojo.xhrPost({
-        url: windAmsDwVestasUrl + 'inspectionEventResource/search',
+        url: serviceApiUrl + 'inspectionEventResource/search',
         handleAs: "json",
         headers: {
             "Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
         },
         postData: '{ "inspectionEventId": "' + tempInspectionData.id + '" }'
     });
     getInspectionEventResourcesDeferred.then(function(results){
         var inspectionEventDeferreds = [];
         var deleteInspectionEventDeferred = dojo.xhrDelete({
-            url: windAmsDwVestasUrl + 'inspectionEvent/' + tempInspectionData.id,
+            url: serviceApiUrl + 'inspectionEvent/' + tempInspectionData.id,
             handleAs: "json",
             headers: {
                 "Content-Type": "application/json",
-				"Authorization": JSON.stringify(authRequest)
+				"Authorization": "Bearer " + accessToken
             }
         });
         removeSiteDataInspectionEvent(tempInspectionData.id);
@@ -1720,11 +1724,11 @@ function deleteInspectionEvent() {
         
         dojo.forEach(results, function(inspectionEventResource){
             var deleteInspectionEventResourceDeferred = dojo.xhrDelete({
-                url: windAmsDwVestasUrl + 'inspectionEventResource/' + inspectionEventResource.id,
+                url: serviceApiUrl + 'inspectionEventResource/' + inspectionEventResource.id,
                 handleAs: "json",
                 headers: {
                     "Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
                 }
             });
             removeSiteDataInspectionEventResource(inspectionEventResource.id);
@@ -1862,11 +1866,11 @@ function updateSiteViewerAndFeatureLayerRecords(){
 	};
 	
 	var inspectionEventDeferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "inspectionEvent/search",
+		url: serviceApiUrl + "inspectionEvent/search",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		postData: JSON.stringify(data),
 		load: function(response) {
@@ -2116,11 +2120,11 @@ function saveInspectionEventDataToWarehouse(data, url, status) {
 	switch(status){
 		case 'addEvent':
 			var deferred = dojo.xhrPut({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				putData: data,
 				load: function(response) {
@@ -2136,11 +2140,11 @@ function saveInspectionEventDataToWarehouse(data, url, status) {
 			break;
 		case 'modifyEvent':
 			var deferred = dojo.xhrPost({
-				url: windAmsDwVestasUrl + url,
+				url: serviceApiUrl + url,
 				handleAs: "json",
 				headers: {
 					"Content-Type": "application/json",
-					"Authorization": JSON.stringify(authRequest)
+					"Authorization": "Bearer " + accessToken
 				},
 				postData: data,
 				load: function(response) {
