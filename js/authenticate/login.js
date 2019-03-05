@@ -1,498 +1,245 @@
-// Enter Global Config Values & Instantiate ADAL AuthenticationContext
+// The unique domain within Auth0 for the tenant
+var AUTH0_DOMAIN=auth0_config[window.location.hostname].tenant;
+// The unique ID associated with the client app within Auth0
+var AUTH0_CLIENT_ID=auth0_config[window.location.hostname].clientID;
+// The URL to redirect to after authorization.  This URL must
+// be one of the configured ones within the app's config in Auth0
+var AUTH0_CALLBACK_URL=auth0_config[window.location.hostname].callbackURL;
+// The URL of the service to be authenticted for.  Used to look
+// up API in Auth0 and must match the URL for a configured API.
+var AUTH0_AUDIENCE =auth0_config[window.location.hostname].resource;
 
-//Inspectools Dev
-//var webserviceClientId = "17722449-ef2e-4adc-ad1d-8b7ead334ec9";
-//var config = {
-    //instance: 'https://login.microsoftonline.com/',
-    //Inspectools Dev
-	//tenant: '4b07043f-40ce-464d-8715-8e2a4fd8d7d1',
-    //clientId: 'ccde5a1b-aa3c-4086-858b-c7af60e256c1',
-    //postLogoutRedirectUri: " https://windamsdev.vestas.inspectools.net/",
-	//cacheLocation: 'localStorage'
-//};
-var configs = {
-	"windamsdev.inspectools.net": {
-		instance: 'https://login.microsoftonline.com/',
-		tenant: '4b07043f-40ce-464d-8715-8e2a4fd8d7d1',
-		clientId: 'd5a9412a-721f-4de9-9a3d-f0f5b456811f',
-		postLogoutRedirectUri: "https://windamsdev.inspectools.net/",
-		cacheLocation: 'sessionStorage'
-	},
-	"windamsdev.vestas.inspectools.net": {
-		instance: 'https://login.microsoftonline.com/',
-		tenant: 'eb6b9710-d101-4a69-9b3f-7951ad9804e5',
-		clientId: '2ed97cf2-adab-41c5-b6ae-a4bc78622cc8',
-		postLogoutRedirectUri: "https://windamsdev.vestas.inspectools.net/",
-		cacheLocation: 'sessionStorage'
-	},
-	"windamstest.vestas.inspectools.net": {
-		instance: 'https://login.microsoftonline.com/',
-		tenant: '1d7dbf0f-21dc-490c-84df-bd5ebad37e4b',
-		clientId: 'df9f5b6e-99f6-4dc8-a139-1c2f250a366a',
-		postLogoutRedirectUri: "https://windamstest.vestas.inspectools.net/",
-		cacheLocation: 'sessionStorage'
-	}
-}
+// Token used to verify and identify the authenticated user.
+var idToken;
+// Token to be used for authenticating calls to API endpoints.
+var accessToken;
 
-var webserviceClientIds = {
-	"windamsdev.inspectools.net": "17722449-ef2e-4adc-ad1d-8b7ead334ec9",
-	"windamsdev.vestas.inspectools.net": "fa71ab0c-e530-4ef6-b437-231e96a51eea",
-	"windamstest.vestas.inspectools.net": "e163e780-47ed-490f-9152-9f6a104270e8"
-}
-var config = configs[window.location.hostname];
-var webserviceClientId = webserviceClientIds[window.location.hostname];
+var authErrorStatus = null;
+var authErrorKey = "default";
+var appAuth = false;
 
-var authAttempts = 0;
-var authToken = "";
-var tokenComplete = false;
-//var authContext = new AuthenticationContext(config);
-var authContext = {};
-var authenticationErrorStatus = null;
-var authenticationErrorKey = "default";
-
-var authenticationErrorConfig = {
+var authErrorConfig = {
 	"login_required": {
 		"message": "There was a problem logging you in: token is expired for currently cached user.<br>Click Close to log in again.",
 		"action": function() {
-			authContext.clearCache();
-			authContext.login();
 			authenticationError.hide();
+			webAuth.authorize();
 		}
 	},
 	"Token Renewal Failed": {
 		"message": "There was a problem logging you in: token renewal failed due to timeout.<br>Click Close to log in again.",
 		"action": function() {
-			authContext.clearCache();
-			authContext.login();
 			authenticationError.hide();
+			webAuth.authorize();
 		}
 	},
 	"default":{
 		"message": "There was a problem logging you in: unknown issue at this time.<br>Try again or contact support for assistance.",
 		"action": function() {
 			authenticationError.hide();
-			authContext.clearCache();
-			authContext.logOut();
+			logOut();
 		}
 	},
 	"401": {
 		"message": "401 Unauthorized: the current user does not have the necessary credentials.<br>Try again with a supported login.",
 		"action": function() {
 			authenticationError.hide();
-			authContext.clearCache();
-			authContext.logOut();
+			logOut();
 		}
 	},
 	"403": {
 		"message": "403 Forbidden: the current user does not have the necessary credentials.<br>Try again with a supported login.",
 		"action": function() {
 			authenticationError.hide();
-			authContext.clearCache();
-			authContext.logOut();
+			logOut();
 		}
 	},
 	"503": {
 		"message": "503 Authorization Service Unavailable: the server is currently unavailable.<br>Click Close and try again later.",
 		"action": function() {
 			authenticationError.hide();
-			authContext.clearCache();
-			authContext.logOut();
+			logOut();
 		}
 	}
 }
 
-/*
- * error_description	string	error description returned from AAD if token request fails.
- * token				string	token returned from AAD if token request is successful.
- * error				string	error message returned from AAD if token request fails.
- */
+var webAuth = new auth0.WebAuth({
+	domain: AUTH0_DOMAIN,
+	clientID: AUTH0_CLIENT_ID,
+	redirectUri: AUTH0_CALLBACK_URL,
+	audience: AUTH0_AUDIENCE,
+	responseType: 'token id_token',
+	scope: 'openid profile read:messages',
+	leeway: 60
+});
 
- 
-function initAAD() {
-	// Check For & Handle Redirect From AAD After Login
-	var isCallback = authContext.isCallback(window.location.hash);
-	if (isCallback) {
-		console.log("1. load location hash...");
-		console.log("2. handle callback...");
-		authContext.handleWindowCallback();
-	}
-
-	// Check Login Status
-	dojo.byId("loginProgressContent").innerHTML = "Getting current user...";
-	var user = authContext.getCachedUser();
-	if (user) {
-		if (window.location == window.parent.location) {
-			loginProgress.show();
-			console.log(user);
-			console.log("3. request token...");
-			updateLoginProgressBar(1);
-			dojo.byId("loginProgressContent").innerHTML = "Requesting token for " + user.profile.name + "...";
-			
-			authContext.acquireToken(webserviceClientId, tokenObtained);
-			
-			dojo.connect(dojo.byId("authenticationErrorButton"), "onclick", function() {
-				console.log(authenticationErrorKey);
-				authenticationErrorConfig[authenticationErrorKey].action();
-			})
-		}
-	}
-}
-
-function tokenObtained(error_description, token, error) {	
-	if (!error) {
-		console.log("4. collect token...");
-		updateLoginProgressBar(2);
-		dojo.byId("loginProgressContent").innerHTML = "Token retrieved...";
-		
-		dojo.style("mapProgressBar", { "display":"block" });
-		authToken = token;
-		getAuthSites();
-	} else {
-		console.log(error);
-		console.log(error_description);
-		console.log(authenticationErrorStatus);
-		loginProgress.hide();
-		authenticationErrorKey = (!_.isNull(authenticationErrorStatus) && _.has(authenticationErrorConfig, authenticationErrorStatus)) ? authenticationErrorStatus : (_.has(authenticationErrorConfig, error)) ? error : "default";
-		var message = authenticationErrorConfig[authenticationErrorKey].message;
-		dojo.query(".authenticationErrorText")[0].innerHTML = message;
-		authenticationError.show();
-		dojo.attr('sign-in', 'data-viewer-login', 'false');
-	}
-}
-
-function updateExpirationTime() {
-    var user = authContext.getCachedUser();
-    var cur = Math.round(new Date().getTime()/1000.0);
-    if (user) {
-        tokenExpires = user.profile.exp - cur;
-        if (authToken) {
-            obj = jwt_decode(authToken);
-            apiExpires = obj.exp - cur;
-			dojo.byId("sessionTimeoutExpire").innerHTML = Math.floor(apiExpires/60) + " min " + apiExpires%60 + " secs";
-			
-			if (apiExpires <= 300) {
-				sessionTimeoutWarning.show()
-			}
-			
-			if (apiExpires <= 0) {
-				authContext.clearCache();
-				authContext.logOut();
-			}
-        }
-    }
-}
-
-//window.setInterval(updateExpirationTime, 1000);
-
-function renewToken() {
-    dojo.byId("sessionContinueButton").innerHTML = '<i class="fa fa-spinner fa-pulse"></i>';
-	authContext._renewToken(webserviceClientId, function(error_description, token, error) {
-		console.log(error_description);
-		console.log(token);
-		console.log(error);
-        if (token) {
-            authToken = token;
-			sessionTimeoutWarning.hide();
-        } else {
-			authenticationError.show();
-		}
-		dojo.byId("sessionContinueButton").innerHTML = 'Continue';
-    });
-}
-
-function getAuthSites() {
-	if (authToken) {
-		console.log("5. request user data...");
-		updateLoginProgressBar(3);
-		dojo.byId("loginProgressContent").innerHTML = "Requesting user credentials from server...";
-		dojo.xhrGet({
-			url: windAmsDwVestasUrl + 'auth/credentials',
-			handleAs: "json",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": JSON.stringify(authRequest)
-			},
-			load: function(response) {
-				updateLoginProgressBar(4);
-				dojo.byId("loginProgressContent").innerHTML = "Credentials retrieved ... <b>Login successful!</b>";
-				authSitesRecv(response);
-			},
-			error: function(error){
-				authenticationErrorStatus = error.status;
-				authAttempts += 1;
-				if (authAttempts < 3) {
-					console.log("6. update token...");
-					dojo.byId("loginProgressContent").innerHTML = "Retrieving credentials failed, resending request (" + authAttempts + ")...";
-					authContext.clearCache();
-					authContext.acquireToken(webserviceClientId, tokenObtained);
-					//authContext._renewIdToken(tokenObtained);
-				} else {
-					console.log(error.status);
-					loginProgress.hide();
-					authenticationErrorKey = (!_.isNull(authenticationErrorStatus) && _.has(authenticationErrorConfig, authenticationErrorStatus)) ? authenticationErrorStatus : "default";
-					var message = authenticationErrorConfig[authenticationErrorKey].message;
-					dojo.query(".authenticationErrorText")[0].innerHTML = message;
-					authenticationError.show();
-					dojo.attr('sign-in', 'data-viewer-login', 'false');
-					dojo.style("mapProgressBar", { "display":"none" });
-				}
-				return error;
+function checkAuth0() {
+	if (window.location.hash.includes("access_token")) {
+		webAuth.parseHash(function(err, authResult) {
+			if (authResult && authResult.accessToken && authResult.idToken) {
+				window.location.hash = '';
+				window.history.pushState("", document.title, window.location.pathname);
+				logIn(authResult);
 			}
 		})
+	} else if (localStorage.getItem('isLoggedIn') === 'true') {
+		renewToken();
 	}
 }
 
-function authSitesRecv(response) {
-	var windAmsAppId = "51a2afaf-180d-4d20-8dd9-f06e84e73583";
-    if (_.isEmpty(authUserObject)) { 
-		authUserObject = response;
-		authRoles = (_.has(authUserObject.rolesByApplication, windAmsAppId)) ? authUserObject.rolesByApplication[windAmsAppId] : null;
-		if (authRoles) {
-			var role = (_.indexOf(authRoles, 'Inspector') > -1 || _.indexOf(authRoles, 'Admin') > -1 || _.indexOf(authRoles, 'OrgAdmin') > -1 || _.indexOf(authRoles, 'SiteAdmin') > -1) ? 'inspector' : (_.indexOf(authRoles, 'read_report') > -1) ? 'report' : 'guest';
-			//add report permissions for Data Processor? Guest has lowest privileges already
-			
-			dojo.style('loginError', 'display', 'none');
-			dojo.style('loginDiv', 'height', '105px');
-			
-			dojo.byId('sign-in').innerHTML = 'Sign Out';
-			dojo.attr('sign-in', 'data-viewer-login', 'true');
-			
-			dojo.byId('current-user').innerHTML = "Welcome " + authUserObject.firstName;
-			authUser = authUserObject.firstName + " " +  authUserObject.lastName;
-			authUserId = authUserObject.userId;
-			authUserOrg = (authUserObject.organizations.length > 0) ? _.first(authUserObject.organizations) : { "key": "InspecToolsLLC", "name":"InspecTools" };
-			
-			dojo.fx.wipeOut({ 
-				node: "loginDiv",
-				onEnd: function(){
-					applyCssSkin(authUserOrg.key);
-				}
-			}).play();
-			
-			dojo.style('mapWindSite', 'display', 'block');
-			dojo.style('bladeViewerButton', 'display', 'block');
-			dojo.style('siteViewerButton', 'display', 'block');
-			dojo.style('headerMenuDiv', 'display', 'block');
-			
-			switch(role) {
-				case 'inspector':
-					dojo.style('bladeInspectorGridButtonDiv', 'display','block');
-					dojo.style('bladeInspectorButtonDiv', 'display','block');
-					var display = (authUserOrg.key == "Vestas") ? 'block' : 'none';
-					dojo.style('bladeMoreInfoButtonDiv', 'display', display);
-				
-					dojo.style('bladeInspectionReportButtonDiv', 'display', 'block');
-					var display = (authUserOrg.key == "Vestas" || authUserOrg.key == "InspecToolsLLC") ? 'inline-block' : 'none';
-					dojo.style('bladeInspectionWordDownload', 'display', display);
-					
-					dojo.style('siteImageDownload', 'display','inline-block');
-					dojo.style('siteReportDownload', 'display','inline-block');
-					break;
-				
-				case 'report':
-					dojo.style('bladeInspectorGridButtonDiv', 'display','none');
-					dojo.style('bladeInspectorButtonDiv', 'display','none');
-					dojo.style('bladeMoreInfoButtonDiv', 'display', 'none');
-				
-					dojo.style('bladeInspectionReportButtonDiv', 'display', 'block');
-					var display = (authUserOrg.key == "Vestas" || authUserOrg.key == "InspecToolsLLC") ? 'inline-block' : 'none';
-					dojo.style('bladeInspectionWordDownload', 'display', display);
-					
-					dojo.style('siteImageDownload', 'display','inline-block');
-					dojo.style('siteReportDownload', 'display','inline-block');
-					break;
-				
-				case 'guest':
-					dojo.style('bladeInspectorGridButtonDiv', 'display','none');
-					dojo.style('bladeInspectorButtonDiv', 'display','none');
-					dojo.style('bladeMoreInfoButtonDiv', 'display', 'none');
-					
-					dojo.style('bladeInspectionReportButtonDiv', 'display','none');
-					dojo.style('siteInspectionReportButtonDiv', 'display','none');
-					
-					dojo.style('siteImageDownload', 'display','none');
-					dojo.style('siteReportDownload', 'display','none');
-					break;
+function renewToken() {
+	webAuth.checkSession({}, (err, authResult) => {
+		if (authResult && authResult.accessToken && authResult.idToken) {
+			if (!appAuth) {
+				logIn(authResult);
+			} else {
+				authToken = authResult.accessToken;
+				idToken = authResult.idToken;
+				expiresAt = Math.round(authResult.expiresIn * 1000 + new Date().getTime());
+				localStorage.setItem('isLoggedIn', 'true');
+				localStorage.setItem('expiresAt', expiresAt);
+				sessionTimeoutWarning.hide();
 			}
-			
-			dojo.style("mapProgressBar", { "display":"block" });
-			loginProgress.set("title","Retrieving data ...")
-			dojo.byId("loginProgressContent").innerHTML = "<div id='data-retrieve-message' style='text-align:center;'>Retrieving your asset/inspection data ... <br>thank you for your patience.</div>";
-			
-			//getValidationTranslation(authUserOrg.id);
-			//processSitesByOrganization(authUserObject.sitesByOrganization);
-			
-		} else {
-			loginError('role');
+		} else if (err) {
+			console.log('Could not get a new token '  + err.error + ' : ' + err.error_description + '.');
+			authErrorKey = (!_.isUndefined(authErrorConfig[err.error])) ? err.error : "default";
+			dojo.query(".authenticationErrorText")[0].innerHTML = authErrorConfig[authErrorKey].message;
+			authenticationError.show();
 		}
-	}
+	});
 }
-
-function updateLoginProgressBar(step){
-	var total = dojo.query(".progress-stop").length;
-	var next = step + 1;
-
-	var stopNode = dojo.query(".login-progress-tracker .progress-stop.S" + step)[0];
-	dojo.removeClass(stopNode,"active");
-	dojo.addClass(stopNode,"complete");
-	stopNode.innerHTML = '<i class="fa fa-check"></i>';
-	
-	if (next <= total) {
-		var nextNode = dojo.query(".login-progress-tracker .progress-stop.S" + next)[0];
-		dojo.addClass(nextNode,"active");
-		dojo.addClass(dojo.query(".login-progress-tracker .progress-track.S" + next)[0],"active");
-	}
-	
-}
-
-
-
-
-
-
 
 function signInOnClick() {
     var loginStatus = dojo.attr('sign-in', 'data-viewer-login');
     if (loginStatus == "false"){
-        var display = dojo.style("loginDiv", "display");
-        if (display == "none") {
-            dojo.fx.wipeIn({ 
-                node: "loginDiv",
-                onBegin: function(){
-                    dojo.style('sign-in', { 'backgroundColor':'#2a2a2a', 'color':'#ffffff' });
-                    dijit.focus(dojo.byId("uid"));
-                },
-                onEnd: function() {
-                    
-                }
-            }).play();
-        } else {
-            dojo.fx.wipeOut({ 
-                node: "loginDiv",
-                onEnd: function(){
-					dojo.style('sign-in', { 'backgroundColor':'#1a1a1a', 'color':'#adafaf' });
-                }
-            }).play();
-        }
+        webAuth.authorize();
     } else if (loginStatus == "true") {
-        logInOutViewer('logout');
+        logOut();
     } 
 }
 
 
-function logInOutViewer(state){
-	if (state == 'login') {
-		var username = dojo.byId('uid').value.trim();
-		var password = dojo.byId('pw').value.trim();
-        
-        if (username == "" && password == "") {
-            loginError('null-user-password');
-        } else if (username == "") {
-            loginError('null-user');
-        } else if (password == ""){
-            loginError('null-password');
-        } else {
-           authenticate(username, password); 
-        }
+function updateExpirationTime() {
+    if (localStorage.getItem('isLoggedIn') === 'true' && appAuth) {
+		var currentTime = Math.round(new Date().getTime()/1000);
+		var tokenTime = Math.round(parseInt(localStorage.getItem('expiresAt'))/1000);
+        tokenExpires = tokenTime - currentTime;
+        dojo.byId("sessionTimeoutExpire").innerHTML = Math.floor(tokenExpires/60) + " min " + tokenExpires%60 + " secs";
+			
+		if (tokenExpires <= 300) {
+			sessionTimeoutWarning.show()
+		}
 		
-	} else if ( state == 'logout') {
-		
-		dojo.byId('pw').value = '';
-        dojo.byId('pw').focus();
-        
-        loginErrorHighlight('uid','clear');
-        loginErrorHighlight('pw','clear');
-		
-		dojo.byId('sign-in').innerHTML = 'Sign In';
-		dojo.attr('sign-in', 'data-viewer-login', 'false');
-		
-		dojo.style('loginError', 'display', 'none');
-		dojo.style('loginDiv', 'height', '105px');
-		
-		dojo.byId('current-user').innerHTML = '';
-		authUser = '';
-		authUserId = '';
-		authRole = '';
-        
-        authUserObject = {};
-        authSites = [];
-        authRoles = [];
-        authUserOrg = [];
-        authExtent = null;
-        siteData = {};
-		
-		dojo.style('mapWindSite', 'display', 'none');
-		dojo.style('bladeViewerButton', 'display', 'none');
-		dojo.style('siteViewerButton', 'display', 'none');
-        
-        dojo.style('map-legend', 'visibility', 'hidden');
-        
-        dojo.query('[class*="toolTip"]').style("visibility", "hidden");
-        dojo.attr("mapWindSite", "data-wind-selector-status", "closed");
-		
-		dojo.query("#lasViewerOuterContent iframe")[0].src = "";
-		
-		map.setExtent(initialExtent);
-		
-		var bladeViewerClose = dojo.fx.slideTo({
-			node: 'bladeViewer',
-			left: -1000,
-			top: dojo.style("bladeViewer", "top"),
-			beforeBegin:  function() {
-				dojo.attr('bladeViewer','data-blade-viewer-status', 'closed');
-			}
-		});
-		var siteViewerClose = dojo.fx.slideTo({
-			node: 'siteViewer',
-			left: -10000,
-			top: dojo.style("siteViewer", "top"),
-			beforeBegin:  function() {
-				dojo.attr('siteViewer','data-las-viewer-status', 'closed');
-			}
-		});
-		var lasViewerClose = dojo.fx.slideTo({
-			node: 'lasViewer',
-			left: -10000,
-			top: dojo.style("lasViewer", "top"),
-			beforeBegin:  function() {
-				dojo.attr('lasViewer','data-las-viewer-status', 'closed');
-			}
-		});
-		
-		dojo.fx.combine([bladeViewerClose, siteViewerClose, lasViewerClose]).play();
-		clearHighlightSymbol();
-		resetBladeViewerPanel();
-		resetSiteViewerPanel();
-		removeMapLayers();
-	}
+		if (tokenExpires <= 0) {
+			logOut();
+		}
+    }
 }
 
-function authenticate(username, password) {
+window.setInterval(updateExpirationTime, 1000);
+
+function logIn(authResult) {
+	accessToken = authResult.accessToken;
+	idToken = authResult.idToken;
+	expiresAt = Math.round(authResult.expiresIn * 1000 + new Date().getTime());
 	
-   authRequest = {
-        "login": username,
-		"passwordHash":sha256(password)
-    };
+	localStorage.setItem('isLoggedIn', 'true');
+	localStorage.setItem('expiresAt', expiresAt);
 	
+	authenticate();
+}
+
+function logOut() {
+	localStorage.removeItem('isLoggedIn');
+	localStorage.removeItem('expiresAt');
+	accessToken = null;
+	idToken = null;
+	
+	var logOutOptions = { "clientId": AUTH0_CLIENT_ID, "returnTo":AUTH0_CALLBACK_URL };
+	webAuth.logout(logOutOptions);
+	
+	dojo.byId('sign-in').innerHTML = 'Sign In';
+	dojo.attr('sign-in', 'data-viewer-login', 'false');
+	
+	dojo.byId('current-user').innerHTML = '';
+	authUser = '';
+	authUserId = '';
+	authRole = '';
+	
+	authUserObject = {};
+	authSites = [];
+	authRoles = [];
+	authUserOrg = [];
+	authExtent = null;
+	siteData = {};
+	
+	dojo.style('mapWindSite', 'display', 'none');
+	dojo.style('bladeViewerButton', 'display', 'none');
+	dojo.style('siteViewerButton', 'display', 'none');
+	
+	dojo.style('map-legend', 'visibility', 'hidden');
+	
+	dojo.query('[class*="toolTip"]').style("visibility", "hidden");
+	dojo.attr("mapWindSite", "data-wind-selector-status", "closed");
+	
+	dojo.query("#lasViewerOuterContent iframe")[0].src = "";
+	
+	map.setExtent(initialExtent);
+	
+	var bladeViewerClose = dojo.fx.slideTo({
+		node: 'bladeViewer',
+		left: -1000,
+		top: dojo.style("bladeViewer", "top"),
+		beforeBegin:  function() {
+			dojo.attr('bladeViewer','data-blade-viewer-status', 'closed');
+		}
+	});
+	var siteViewerClose = dojo.fx.slideTo({
+		node: 'siteViewer',
+		left: -10000,
+		top: dojo.style("siteViewer", "top"),
+		beforeBegin:  function() {
+			dojo.attr('siteViewer','data-las-viewer-status', 'closed');
+		}
+	});
+	var lasViewerClose = dojo.fx.slideTo({
+		node: 'lasViewer',
+		left: -10000,
+		top: dojo.style("lasViewer", "top"),
+		beforeBegin:  function() {
+			dojo.attr('lasViewer','data-las-viewer-status', 'closed');
+		}
+	});
+	
+	dojo.fx.combine([bladeViewerClose, siteViewerClose, lasViewerClose]).play();
+	clearHighlightSymbol();
+	resetBladeViewerPanel();
+	resetSiteViewerPanel();
+	removeMapLayers();
+	
+}
+
+function authenticate() {
 	dojo.xhrGet({
-		url: windAmsDwVestasUrl + 'auth/credentials',
+		url: serviceApiUrl + 'auth/credentials',
 		handleAs: "json",
 		headers: {
 			"Accept": "application/json",
 			"Content-Type": "application/json; charset=utf-8",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		load: function(response) {
-            loginSuccess(response);
+			loginSuccess(response);
 		},
 		error: function(error){
 			console.log(error);
-            loginError();
+			loginError();
 		}
 	});
 }
 
 function loginSuccess(response) {
+	appAuth = true;
 	dojo.style("mapProgressBar", { "display":"block" });
 	
 	authUserObject = dojo.clone(response);
@@ -507,16 +254,14 @@ function loginSuccess(response) {
 	authUser = authUserObject.firstName + " " +  authUserObject.lastName;
 	authUserId = authUserObject.userId;
 	authUserOrg = _.first(authUserObject.organizations);
+	authUserOrgKey = (authUserOrg.key == "Duke") ? authUserOrg.key : "default";
 	
-	dojo.fx.wipeOut({ 
-		node: "loginDiv"
-	}).play();
+	getTranslation(authUserOrg.id);
 	
 	dojo.query(".login-progress-tracker").style("display", "none");
 	loginProgress.set("title","Retrieving data ...")
 	dojo.byId("loginProgressContent").innerHTML = "<div id='data-retrieve-message' style='text-align:center;'>Retrieving your inspection data ... <br>thank you for your patience.</div>";		
 	loginProgress.show();
-	
 	
 	var siteByOrg = _.flatten(_.values(authUserObject.sitesByOrganization));
 	getFeeders(siteByOrg);
@@ -529,6 +274,25 @@ function loginSuccess(response) {
 	dojo.style('switchViewButton', 'display', 'block');
 	
 	dojo.style('map-legend', 'visibility', 'visible');
+	
+	dojo.query("table[class*='distribution-'").style("display","none");
+	dojo.query(".distribution-" + authUserOrgKey).style("display","table");
+	
+	dojo.query("#dataMergedContent").style("display", "block");
+	
+	if (authUserOrgKey == "Duke") {
+		
+		dojo.forEach(["Processed","PendingMerge","Complete","Critical"], function(level) {
+			dojo.style("distribution-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
+			dojo.style("distribution-class-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
+		});
+		
+		dojo.byId("site-viewer-title").innerHTML = "circuit";
+		dojo.byId("pole-criticality-header").innerHTML = "Pole Status:";
+		dojo.query("#pole-criticality-header").style("width", "90px");
+		dojo.query("#dataMergedContent").style("display", "none");
+		
+	}
 }
 
 function loginError(type) {
@@ -582,43 +346,12 @@ function loginErrorHighlight(nodeId, state) {
 
 
 function getFeeders(sites) {
-	/* dojo.xhrGet({
-		url: windAmsDwVestasUrl + 'feeder',
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		load: function(response) {
-			//authUserAssets = response;
-			parseFeeders(response);
-		},
-		error: function(error){
-			console.log(error);
-		}
-	}); */
-	
 	var feeders = _.filter(sites, function(site) { return _.has(site, "feederNumber"); });
 	parseFeeders(feeders);
 }
 
 
 function getTransmissionLines(sites) {
-	/* dojo.xhrGet({
-		url: windAmsDwVestasUrl + 'transmissionLine',
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		load: function(response) {
-			parseTransmissionLines(response);
-		},
-		error: function(error){
-			console.log(error);
-		}
-	}); */
-	
 	var transmissionLines = _.filter(sites, function(site) { return _.has(site, "lineNumber"); });
 	parseTransmissionLines(transmissionLines);
 }
@@ -626,11 +359,11 @@ function getTransmissionLines(sites) {
 function getWorkOrders(site) {
 	var data = { "siteId": site  };
 	var deferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "workOrder/search",
+		url: serviceApiUrl + "workOrder/search",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		postData: JSON.stringify(data)
 	});
@@ -640,11 +373,11 @@ function getWorkOrders(site) {
 function getFeederInspections(site, workOrder) {
 	var data = { "siteId": site, "orderNumber": workOrder };
 	var deferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "feederInspection/search",
+		url: serviceApiUrl + "feederInspection/search",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		postData: JSON.stringify(data)
 	})
@@ -655,11 +388,11 @@ function getFeederInspections(site, workOrder) {
 function getTransmissionLineInspections(site, workOrder) {
 	var data = { "siteId": site, "orderNumber": workOrder };
 	var deferred = dojo.xhrPost({
-		url: windAmsDwVestasUrl + "transmissionLineInspection/search",
+		url: serviceApiUrl + "transmissionLineInspection/search",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		postData: JSON.stringify(data)
 	})
@@ -675,7 +408,7 @@ function parseFeeders(feederList) {
     dijit.byId('siteViewerDropDown').removeOption(options);
     dijit.byId('siteViewerDropDown').addOption({ label: '', value: '' });
 	
-	//var feederList  = _.flatten(_.values(feeders));
+	var feederIds = [];
     if (feederList.length > 0) {
 		
 		var workOrderDeferreds = [];
@@ -702,6 +435,7 @@ function parseFeeders(feederList) {
 						}
 						
 						if (!_.isNull(workOrder.orderNumber)) {
+							feederIds.push(feeder.id);
 							sitesToProcess.push(feeder.id);
 							
 							siteData[feeder.id].workOrders[workOrder.orderNumber] = {};
@@ -765,105 +499,33 @@ function parseFeeders(feederList) {
 						}
 					})
 				})
+				
 				var feederInspectionDeferredList = new dojo.DeferredList(feederInspectionDeferreds);
 				feederInspectionDeferredList.then(function(response) {
-					var feederInspections = dojo.map(response, function(r) { return r[1] });
+					var feederInspections = [];
+					dojo.forEach(response, function(r, i) {
+						if (r[1].length > 0) {
+							feederInspections.push(r[1]);
+						} else {
+							var td = _.first(dojo.query(".site-download-wait." + feederIds[i]));
+							td.innerHTML = "<i class='fa fa-times-circle site-download-wait'></i>";
+							sitesToProcess = _.without(sitesToProcess, feederIds[i]);
+						}
+					});
+					
 					if (feederInspections.length > 0) {
-						var feederInspectionObjs = [];
-						var feederSummaryDeferreds = [];
 						dojo.forEach(feederInspections, function(feederInspection) {
 							dojo.forEach(feederInspection, function(inspection) {
-								feederInspectionObjs.push(inspection)
-								var feederSummaryDeferred = dojo.xhrGet({
-									url: windAmsDwVestasUrl + "feederInspection/" + inspection.id + "/summary",
-									handleAs: "json",
-									headers: {
-										"Content-Type": "application/json",
-										"Authorization": JSON.stringify(authRequest)
-									},
-									load: function(response) {
-										//console.log(response);
-									},
-									error: function(error) {
-										console.log(error);
-									}
-								})
-								feederSummaryDeferreds.push(feederSummaryDeferred);
+								getSiteSummary(inspection.id, inspection.siteId, inspection.orderNumber, 'distribution');
 							})
 						})
-						
-						var feederSummaryList = new dojo.DeferredList(feederSummaryDeferreds);
-						feederSummaryList.then(function(response) {
-							var feederInspectionSummaries = dojo.map(response, function(r) { return r[1] });
-							if (feederInspectionSummaries.length > 0) {
-								dojo.forEach(feederInspectionSummaries, function(feeder, i) {
-									var workOrder = feederInspectionObjs[i].orderNumber;
-									if (_.has(siteData[feeder.id].workOrders, workOrder)) {
-										siteData[feeder.id].workOrders[workOrder].summary = {};
-										siteData[feeder.id].workOrders[workOrder].summary.name = feeder.name;
-										siteData[feeder.id].workOrders[workOrder].summary.feederNumber = parseInt(feeder.feederNumber);
-										siteData[feeder.id].workOrders[workOrder].summary.windZone = feeder.windZone;
-										siteData[feeder.id].workOrders[workOrder].summary.hardeningLevel = feeder.hardeningLevel;
-										
-										siteData[feeder.id].workOrders[workOrder].summary.feederMapDownloadURL = feeder.feederMapDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.summaryReportDownloadURL = feeder.summaryReportDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.anomalyReportDownloadURL = feeder.anomalyReportDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.anomalyMapDownloadURL = feeder.anomalyMapDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.surveyReportDownloadURL = feeder.surveyReportDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.vegitationEncroachmentGoogleEarthURL = feeder.vegitationEncroachmentGoogleEarthURL;
-										siteData[feeder.id].workOrders[workOrder].summary.vegitationEncroachmentReportDownloadURL = feeder.vegitationEncroachmentReportDownloadURL;
-										siteData[feeder.id].workOrders[workOrder].summary.vegitationEncroachmentShapeDownloadURL = feeder.vegitationEncroachmentShapeDownloadURL;
-										
-										siteData[feeder.id].workOrders[workOrder].summary.objects = {};
-										siteData[feeder.id].workOrders[workOrder].summary.objects.subStationSummary = feeder;
-										siteData[feeder.id].workOrders[workOrder].summary.objects.subStationSummary.feederNumber = parseInt(feeder.feederNumber);
-										siteData[feeder.id].workOrders[workOrder].summary.objects.poleSummary = feeder.polesByFPLId;
-										siteData[feeder.id].workOrders[workOrder].summary.objects.poleInspectionSummary = feeder.poleInspectionsByFPLId;
-										
-										dojo.forEach(_.keys(siteData[feeder.id].workOrders[workOrder].summary.objects.poleSummary), function(fplid) {				
-											var asset = siteData[feeder.id].workOrders[workOrder].summary.objects.poleSummary[fplid];
-											if (_.isNull(asset.location)) {
-												siteData[feeder.id].workOrders[workOrder].summary.objects.poleSummary[fplid].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
-											}
-										})
-										
-										siteData[feeder.id].workOrders[workOrder].summary.data = dojo.map(_.keys(feeder.polesByFPLId), function(fplid) {
-											var pole = dojo.clone(feeder.polesByFPLId[fplid]);
-											pole.assetInspection = (!_.isUndefined(feeder.poleInspectionsByFPLId[fplid])) ? dojo.clone(feeder.poleInspectionsByFPLId[fplid]) : {};
-											return pole;
-										});
-										
-										createGridDataStore(feeder.id, workOrder, siteData[feeder.id].workOrders[workOrder].summary.data, "DistributionLine");
-									}
-									
-									var td = _.first(dojo.query(".site-download-wait." + feeder.id));
-									td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>";
-									sitesToProcess = _.without(sitesToProcess, feeder.id);
-								})
-		
-								if (sitesToProcess.length == 0) {
-									finishDataParsing();
-								}
-								
-							} else {
-								var node = dojo.create("div",{ id: site[1].name }, "windSiteSelectInnerContent", "last");
-								dojo.attr(node, "innerHTML", "No authorized sites");
-								dojo.addClass(node, "windSiteSelectorItem");
-								renderWindSiteSelector();
-							}
-							
-						});
 					}
 				})
 			}
 			
 		});
     } else {
-        var node = dojo.create("div",{ id: "no_authorized_sites" }, "windSiteSelectInnerContent", "last");
-        dojo.attr(node, "innerHTML", "No authorized sites");
-        dojo.addClass(node, "windSiteSelectorItem");
-        renderWindSiteSelector();
-		loginProgress.hide();
+        dijit.byId('siteViewerDropDown').addOption({ label: '', value: '' });
     }
 }
 
@@ -874,7 +536,7 @@ function parseTransmissionLines(transmissionLineList) {
 	var options = dijit.byId('transmissionViewerDropDown').getOptions();
     dijit.byId('transmissionViewerDropDown').removeOption(options);
 	
-	//var transmissionLineList  = _.flatten(_.values(transmissionLines));
+	var transmissionLineIds = [];
     if (transmissionLineList.length > 0) {
 		
 		var workOrderDeferreds = [];
@@ -903,6 +565,7 @@ function parseTransmissionLines(transmissionLineList) {
 						}
 						
 						if (!_.isNull(workOrder.orderNumber)) {
+							transmissionLineIds.push(transmissionLine.id);
 							sitesToProcess.push(transmissionLine.id);
 							
 							siteData[transmissionLine.id].workOrders[workOrder.orderNumber] = {};
@@ -969,88 +632,24 @@ function parseTransmissionLines(transmissionLineList) {
 				
 				var transmissionLineInspectionDeferredList = new dojo.DeferredList(transmissionLineInspectionDeferreds);
 				transmissionLineInspectionDeferredList.then(function(response) {
-					var transmissionLineInspections = dojo.map(response, function(r) { return r[1] });
+					
+					var transmissionLineInspections = [];
+					dojo.forEach(response, function(r, i) {
+						if (r[1].length > 0) {
+							transmissionLineInspections.push(r[1]);
+						} else {
+							var td = _.first(dojo.query(".site-download-wait." + transmissionLineIds[i]));
+							td.innerHTML = "<i class='fa fa-times-circle site-download-wait'></i>";
+							sitesToProcess = _.without(sitesToProcess, transmissionLineIds[i]);
+						}
+					});
+					
 					if (transmissionLineInspections.length > 0) {
-						var transmissionLineInspectionObjs = [];
-						var transmissionLineSummaryDeferreds = [];
 						dojo.forEach(transmissionLineInspections, function(transmissionLineInspection) {
 							dojo.forEach(transmissionLineInspection, function(inspection) {
-								transmissionLineInspectionObjs.push(inspection);
-								var transmissionLineSummaryDeferred = dojo.xhrGet({
-									url: windAmsDwVestasUrl + "transmissionLineInspection/" + inspection.id + "/summary",
-									handleAs: "json",
-									headers: {
-										"Content-Type": "application/json",
-										"Authorization": JSON.stringify(authRequest)
-									},
-									load: function(response) {
-										//console.log(response);
-									},
-									error: function(error) {
-										console.log(error);
-									}
-								})
-								transmissionLineSummaryDeferreds.push(transmissionLineSummaryDeferred);
-							})
+								getSiteSummary(inspection.id, inspection.siteId, inspection.orderNumber, 'transmission');
+							}) 
 						})
-						var transmissionLineSummaryList = new dojo.DeferredList(transmissionLineSummaryDeferreds);
-						transmissionLineSummaryList.then(function(response) {
-							var transmissionLineSummaries = dojo.map(response, function(r) { return r[1] });
-							if (transmissionLineSummaries.length > 0) {
-								dojo.forEach(transmissionLineSummaries, function(transmissionLine, i) {
-									var workOrder = transmissionLineInspectionObjs[i].orderNumber;
-									if (_.has(siteData[transmissionLine.siteId].workOrders, workOrder)) {
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary = {};
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.name = siteData[transmissionLine.siteId].name;
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.lineNumber = siteData[transmissionLine.siteId].lineNumber;
-										
-										// hard-coded for the demo
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.summaryReportDownloadURL = window.location.href + "summary/Summary_Report_Line_1001.xlsx";
-										
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects = {};
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.transmissionLineSummary = transmissionLine;
-										
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.structureSummary = transmissionLine.structures;
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.structureInspectionSummary = transmissionLine.structureInspections;
-										
-										dojo.forEach(_.keys(siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.structureSummary), function(id) {				
-											var asset = siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.structureSummary[id];
-											if (_.isNull(asset.location)) {
-												siteData[transmissionLine.siteId].workOrders[workOrder].summary.objects.structureSummary[id].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
-											}
-										})
-										
-										siteData[transmissionLine.siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(transmissionLine.structures), function(id) {
-											var asset = dojo.clone(transmissionLine.structures[id]);
-											asset.assetInspection = (!_.isUndefined(transmissionLine.structureInspections[id])) ? dojo.clone(transmissionLine.structureInspections[id]) : {};
-											
-											if (!_.isEmpty(asset.assetInspection)) {
-												asset.assetInspection.inspectionEvents = {};
-												asset.assetInspection.inspectionEvents.events = [];
-												asset.assetInspection.inspectionEventResources = {};
-												asset.assetInspection.inspectionEventResources.polys = [];
-												dojo.forEach(asset.assetInspection.flightImages, function(image) {
-														image.polys = [];
-												});
-											}
-											
-											return asset;
-										});
-										
-										createGridDataStore(transmissionLine.siteId, workOrder, siteData[transmissionLine.siteId].workOrders[workOrder].summary.data, "TransmissionLine");
-
-									}
-									
-									var td = _.first(dojo.query(".site-download-wait." + transmissionLine.siteId));
-									td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>";
-									sitesToProcess = _.without(sitesToProcess, transmissionLine.siteId);
-								})
-								
-								if (sitesToProcess.length == 0) {
-									finishDataParsing();
-								}
-							}
-						});
 					}
 				})
 			}
@@ -1069,6 +668,25 @@ function finishDataParsing(){
 			dojo.style("loginProgressContent", "width", "auto;");
 		}, 1000)
 	}, 1000)
+	
+	//remove any workOrder without inspection data and remove any sites without work orders
+	var siteIds = _.keys(siteData);
+	dojo.forEach(siteIds, function(siteId) {
+		var workOrders = _.keys(siteData[siteId].workOrders);
+		dojo.forEach(workOrders, function(workOrder) {
+			if(!_.has(siteData[siteId].workOrders[workOrder], "summary")) {
+				delete siteData[siteId].workOrders[workOrder];
+			}
+		})
+		if (_.isEmpty(siteData[siteId].workOrders)) {
+			if (dojo.byId(siteId)) {
+				dojo.destroy(dojo.byId(siteId).parentNode);
+			}
+			dijit.byId('siteViewerDropDown').removeOption(siteId);
+			authSites = dojo.filter(authSites, function(site) { return site.id !== siteId; });
+			delete siteData[siteId];
+		}
+	})
 
 	renderWindSiteSelector();
 							
@@ -1077,15 +695,40 @@ function finishDataParsing(){
 	var extent = getQueryResultsExtent(windFeatureGraphics);
 	authExtent = extent;
 
-	var ids = dojo.filter(_.keys(siteData), function(site) { return siteData[site].type == "DistributionLine"; });
-	//var ids = _.keys(siteData);
 	window.setTimeout(function(){
-		var id = _.first(ids);
-		siteId = id;
-		siteName = siteData[id].name;
-		dijit.byId('siteViewerDropDown').set('value', id);
-		updateWorkOrderDropdown(id);
-		openViewerPanel("siteViewer"); 
+		var switchViewButton = dojo.byId("switchViewButton");
+		
+		var distIds = dojo.filter(_.keys(siteData), function(site) { return siteData[site].type == "DistributionLine"; });
+		var transIds = dojo.filter(_.keys(siteData), function(site) { return siteData[site].type == "TransmissionLine"; });
+		
+		if (distIds.length > 0 || transIds.length > 0) {
+			var id = (distIds.length > 0) ? _.first(distIds) : _.first(transIds);
+			siteView = (distIds.length > 0) ? "DistributionLine" : "TransmissionLine";
+			var viewId = (siteView == "DistributionLine") ? "site" : "transmission";
+			
+			siteId = id;
+			siteName = siteData[id].name;
+			dijit.byId(viewId + 'ViewerDropDown').set('value', id);
+			updateWorkOrderDropdown(id);
+			openViewerPanel("siteViewer"); 
+			
+			if (viewId == "transmission"){
+				dojo.removeClass(switchViewButton, "distribution transmission");
+				dojo.addClass(switchViewButton, "transmission");
+				switchViews(siteView);
+			}
+			var display = (distIds.length == 0 || transIds.length == 0) ? "none" : "block";
+			dojo.style(switchViewButton, "display", display);
+			
+		} else {
+			var node = dojo.create("div",{ id: "no_authorized_sites" }, "windSiteSelectInnerContent", "last");
+			dojo.attr(node, "innerHTML", "No authorized sites");
+			dojo.addClass(node, "windSiteSelectorItem");
+			renderWindSiteSelector();
+			loginProgress.hide();
+			dojo.style(switchViewButton, "display", "none");
+		}
+		
 		windFeatureLayer.redraw();
 		
 		dojo.style("mapProgressBar", "display", "none");
@@ -1096,11 +739,11 @@ function finishDataParsing(){
 
 function getUUIDs() {
 	dojo.xhrGet({
-		url: windAmsDwVestasUrl + "utils/uuid?count=50",
+		url: serviceApiUrl + "utils/uuid?count=50",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		load: function(results){
 			uuids = results;
@@ -1112,39 +755,140 @@ function getUUIDs() {
 	
 }
 
-function getValidationTranslation(id){
-	var validationDeferred = dojo.xhrGet({
-		url: windAmsDwVestasUrl + "org/" + id + "/validations",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
-		},
-		load: function(results){
-			validationJson = results;
-		},
-		error: function(error) {
-			console.log(error);
-		}
-	});
+function getTranslation(id){
 	
 	var translationDeferred = dojo.xhrGet({
-		url: windAmsDwVestasUrl + "org/" + id + "/translations",
+		url: serviceApiUrl + "org/" + id + "/translations",
 		handleAs: "json",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": JSON.stringify(authRequest)
+			"Authorization": "Bearer " + accessToken
 		},
 		load: function(results){
 			translationJson = results;
+			createInspectionDisplay();
 		},
 		error: function(error) {
 			console.log(error);
+			createInspectionDisplay();
 		}
 	});
+}
+
+function getSiteSummary(id, siteId, workOrder, type) {
 	
-	var dataDeferredList = new dojo.DeferredList([validationDeferred,translationDeferred]);
-    dataDeferredList.then(function(response) {
-		console.log(response);
+	var apiObj = (type == "distribution") ? "feederInspection" : "transmissionLineInspection";
+	var assetSummaryDeferred = dojo.xhrGet({
+		url: serviceApiUrl + apiObj + "/" + id + "/summary",
+		handleAs: "json",
+		headers: {
+			"Content-Type": "application/json",
+			"Authorization": "Bearer " + accessToken
+		}
+	})
+	assetSummaryDeferred.then(function(response) {
+		if (type == "distribution") {
+			var feeder = response;
+			if (_.has(siteData[siteId].workOrders, workOrder)) {
+				siteData[siteId].workOrders[workOrder].summary = {};
+				siteData[siteId].workOrders[workOrder].summary.name = feeder.name;
+				siteData[siteId].workOrders[workOrder].summary.feederNumber = feeder.feederNumber;
+				siteData[siteId].workOrders[workOrder].summary.windZone = feeder.windZone;
+				siteData[siteId].workOrders[workOrder].summary.hardeningLevel = feeder.hardeningLevel;
+				
+				siteData[siteId].workOrders[workOrder].summary.feederMapDownloadURL = feeder.feederMapDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = feeder.summaryReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.anomalyReportDownloadURL = feeder.anomalyReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.anomalyMapDownloadURL = feeder.anomalyMapDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.surveyReportDownloadURL = feeder.surveyReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentGoogleEarthURL = feeder.vegitationEncroachmentGoogleEarthURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentReportDownloadURL = feeder.vegitationEncroachmentReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentShapeDownloadURL = feeder.vegitationEncroachmentShapeDownloadURL;
+				
+				siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = feeder.inspectionFlightVideos;
+				
+				siteData[siteId].workOrders[workOrder].summary.objects = {};
+				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary = feeder;
+				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary.feederNumber = feeder.feederNumber;
+				siteData[siteId].workOrders[workOrder].summary.objects.poleSummary = feeder.polesByFPLId;
+				siteData[siteId].workOrders[workOrder].summary.objects.poleInspectionSummary = feeder.poleInspectionsByFPLId;
+				
+				dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.poleSummary), function(fplid) {				
+					var asset = siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid];
+					if (_.isNull(asset.location)) {
+						siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
+					}
+				})
+				
+				siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(feeder.polesByFPLId), function(fplid) {
+					var pole = dojo.clone(feeder.polesByFPLId[fplid]);
+					pole.assetInspection = (!_.isUndefined(feeder.poleInspectionsByFPLId[fplid])) ? dojo.clone(feeder.poleInspectionsByFPLId[fplid]) : {};
+					return pole;
+				});
+				
+				createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "DistributionLine");
+			}
+		}
+		if (type == "transmission") {
+			var transmissionLine = response;
+			if (_.has(siteData[siteId].workOrders, workOrder)) {
+				siteData[siteId].workOrders[workOrder].summary = {};
+					siteData[siteId].workOrders[workOrder].summary.name = siteData[siteId].name;
+					siteData[siteId].workOrders[workOrder].summary.lineNumber = siteData[siteId].lineNumber;
+					
+					siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = transmissionLine.summaryReportDownloadURL;
+					siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = transmissionLine.inspectionFlightVideos;
+					
+					siteData[siteId].workOrders[workOrder].summary.objects = {};
+					siteData[siteId].workOrders[workOrder].summary.objects.transmissionLineSummary = transmissionLine;
+					
+					siteData[siteId].workOrders[workOrder].summary.objects.structureSummary = transmissionLine.structures;
+					siteData[siteId].workOrders[workOrder].summary.objects.structureInspectionSummary = transmissionLine.structureInspections;
+					
+					dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.structureSummary), function(id) {				
+						var asset = siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id];
+						if (_.isNull(asset.location)) {
+							siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
+						}
+					})
+					
+					siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(transmissionLine.structures), function(id) {
+						var asset = dojo.clone(transmissionLine.structures[id]);
+						asset.assetInspection = (!_.isUndefined(transmissionLine.structureInspections[id])) ? dojo.clone(transmissionLine.structureInspections[id]) : {};
+						
+						if (!_.isEmpty(asset.assetInspection)) {
+							asset.assetInspection.inspectionEvents = {};
+							asset.assetInspection.inspectionEvents.events = [];
+							asset.assetInspection.inspectionEventResources = {};
+							asset.assetInspection.inspectionEventResources.polys = [];
+							dojo.forEach(asset.assetInspection.flightImages, function(image) {
+									image.polys = [];
+							});
+						}
+						
+						return asset;
+					});
+					
+					createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "TransmissionLine");
+			}
+		}	
+		
+		var td = _.first(dojo.query(".site-download-wait." + siteId));
+		td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>";
+		sitesToProcess = _.without(sitesToProcess, siteId);
+		
+		if (sitesToProcess.length == 0) {
+			finishDataParsing();
+		}
+		
+	},
+	function(err) {
+		var td = _.first(dojo.query(".site-download-wait." + siteId));
+		td.innerHTML = "<i class='fa fa-times-circle site-download-wait'></i>";
+		sitesToProcess = _.without(sitesToProcess, siteId);
+		
+		if (sitesToProcess.length == 0) {
+			finishDataParsing();
+		}
 	})
 }

@@ -533,8 +533,15 @@ bottom:37px;
 }
 
 .class-legend table {
-width:350px;
 margin:0px;
+}
+
+#distribution-class-legend table {
+width:405px;
+}
+
+#transmission-class-legend table {
+width:395px;
 }
 
 .map-legend td , .class-legend td {
@@ -619,11 +626,11 @@ pointer:hand;
 cursor:pointer;
 }
 
-#transmission-legend {
+table.transmission-default {
 display:none;
 }
 
-#transmission-legend td {
+table.transmission-default td{
 width:55px;
 }
 
@@ -703,17 +710,15 @@ display:none;
 
 #bladeViewerHeader, #siteViewerHeader, #lasViewerHeader {
 height:30px;
-line-height:28px;
-font-family:'Neuropol';
-font-size: 18px;
+line-height:33px;
+font-size: 20px;
 color:#fff;
+font-weight: bold;
 padding: 0px 0px 0px 25px;
-background: #666;
-letter-spacing: -0.05em;
-cursor: move;
+background: #666 url(../images/pole_viewer_text.png) no-repeat 20px center;
 }
 
-/* #bladeViewerHeader{
+#bladeViewerHeader{
 background: #666 url(../images/pole_viewer_text.png) no-repeat 20px center;
 cursor: move;
 }
@@ -727,17 +732,32 @@ background: #666 url(../images/structure_viewer_text.png) no-repeat 20px center;
 }
 
 #siteViewerHeader{
-background: #666 url(../images/feeder_viewer_text.png) no-repeat 20px center;
+/* background: #666 url(../images/feeder_viewer_text.png) no-repeat 20px center; */
+background: #666;
 cursor: move;
 }
 
 .distribution  #siteViewerHeader{
-background: #666 url(../images/feeder_viewer_text.png) no-repeat 20px center;
+/* background: #666 url(../images/feeder_viewer_text.png) no-repeat 20px center; */
 }
 
 .transmission  #siteViewerHeader{
-background: #666 url(../images/line_viewer_text.png) no-repeat 20px center;
-} */
+/* background: #666 url(../images/line_viewer_text.png) no-repeat 20px center; */
+}
+
+.siteViewerHeaderTitle {
+position: absolute;
+top: -2px;
+font-family: 'Neuropol';
+font-size: 17px;
+font-weight: normal;
+color: #ffffff;
+}
+
+#lasViewerHeader{
+background: #666 url(../images/las_viewer_text.png) no-repeat 20px center;
+cursor: move;
+}
 
 .siteViewerToggle {
 width:auto;
@@ -899,10 +919,14 @@ position: relative;
 width: 300px;
 margin: 0px 0px 0px 15px;
 display: block;
-height: 560px;
+}
+
+#distributionInspectorPanel {
+height: 560px;	
 }
 
 #transmissionInspectorPanel {
+height: 560px;
 display: none;
 }
 
@@ -2162,7 +2186,11 @@ text-align:center;
 color:#666666;
 background:none;
 border:none;
-margin-left: 10px;
+margin-left: 6px;
+}
+
+.downloadButton.disabled {
+color:#aaaaaa;	
 }
 
 .downloadText{
@@ -3150,12 +3178,101 @@ margin-left: -1px;
 display:none;
 }
 
-#transmissionLineVideo .dijitDialogTitle {
+#inspectionLineVideo .dijitDialogTitle {
 font-family:'Neuropol';
 color:#fff;
 }
 
-#transmissionLineVideoContent, #transmissionLineVideoContent video {
+#inspectionLineVideoContent, #inspectionLineVideoContent video {
 width: 900px;
 height: 600px;
+}
+
+#dataMergedContent {
+padding: 7px 0px 0px 0px;
+width: 175px;
+margin-left: 65px;
+}
+
+#dataMergedHeader {
+font-size: 13px;
+font-weight: bold;
+}
+
+#dataMergedCheck {
+margin-left: 10px;
+position: relative;
+top: 2px;
+font-size: 18px;
+color: #888888;
+}
+
+#dataMergedCheck .dataMergedCheck {
+color:#38918B;
+}
+
+#dataMergedDate {
+font-size: 11px;
+color: #666666;
+top: -3px;
+position: relative;
+}
+
+#poleSelectDiv, #transmissionSelectDiv {
+position:absolute;
+bottom: 7px;
+left: 13px;
+}
+
+#poleSelectDiv .dijitArrowButton, #transmissionSelectDiv .dijitArrowButton {
+display:none;
+}
+
+#poleSelectDiv .dijitInputContainer .dijitInputInner, #transmissionSelectDiv .dijitInputContainer .dijitInputInner  {
+padding: 2px 5px !important;
+font-size: 13px !important;
+}
+
+#poleSelectLabel, #transmissionSelectLabel {
+font-size: 14px;
+color: #1a1a1a;
+font-weight: bold;
+padding: 5px 0px;
+}
+
+#poleSelectIcon, #transmissionSelectIcon {
+position:absolute;
+width:16px;
+height:24px;
+font-size:14px;
+line-height:24px;
+text-align:center;
+color:#888888;
+top:0px;
+right:3px;
+}
+
+.dijitComboBoxMenuPopup .dijitMenuItem {
+padding-left: 5px;
+font-size:13px;
+}
+
+.dijitComboBoxMenuPopup .dijitComboBoxHighlightMatch {
+background-color: #60A2C2 !important;
+color:#ffffff !important;
+}
+
+.dijitComboBoxMenuPopup .dijitMenuItemHover, .dijitComboBoxMenuPopup .dijitMenuItemSelected {
+background-color: #60A2C2 !important;
+color:#ffffff !important;
+}
+
+.dijitComboBoxMenuPopup .dijitMenuItemHover .dijitComboBoxHighlightMatch, .dijitComboBoxMenuPopup .dijitMenuItemSelected .dijitComboBoxHighlightMatch {
+background-color: #60A2C2 !important;
+color:#ffffff !important;
+}
+
+
+.distribution-Duke, #distribution-legend-Duke {
+display:none;	
 }

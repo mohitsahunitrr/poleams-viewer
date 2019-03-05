@@ -3,7 +3,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>PrecisionAnalytics Distribution</title>
+    <title>PrecisionAnalytics</title>
 	<link rel="icon" href="favicon.png" type="image/x-icon"> 
 	<link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Archivo+Narrow">
@@ -21,6 +21,10 @@
 	<link rel="stylesheet" type="text/css" href="css/jquery.jscrollpane.css" media="all" />
 	<link rel="stylesheet" type="text/css" href="css/lightslider.css" />
 	
+	<script type="text/javascript" src="js/config.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/translations_json.js?ver=1.10"></script>
+	<script type="text/javascript" src="js/authenticate/auth0.js?ver=1.10"></script>
+	
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="js/jquery/jscroll/jquery.mousewheel.js"></script>
 	<script type="text/javascript" src="js/jquery/jscroll/jquery.jscrollpane.js"></script>
@@ -28,21 +32,16 @@
 	
 	<script src="https://vjs.zencdn.net/7.4.1/video.min.js"></script>
 	
-	<script src="https://secure.aadcdn.microsoftonline-p.com/lib/1.0.16/js/adal.min.js"></script>
-	<script type="text/javascript" src="js/authenticate/jwt-decode.min.js"></script>
-	
 	<script type="text/javascript" src="js/underscore/underscore-min.js"></script>
     <script type="text/javascript">
 		var djConfig = { parseOnLoad: true };
     </script>
     <script type="text/javascript" src="https://js.arcgis.com/3.26/"></script>
-	<script type="text/javascript" src="js/services.js?ver=1.10"></script>
-	<script type="text/javascript" src="js/authenticate/sha256.min.js"></script>
+	<script type="text/javascript" src="js/globals.js?ver=1.10"></script>
 	<script type="text/javascript" src="js/authenticate/login.js?ver=1.10"></script>
-	<script type="text/javascript" src="js/translations_json.js?ver=1.10"></script>
 	<script type="text/javascript" src="js/ZoomifyImageViewer.js?ver=1.10"></script>
 	<script type="text/javascript" src="js/zoomify.js?ver=1.10"></script>
-    <script type="text/javascript" src="js/globals.js?ver=1.10"></script>
+    
 	<script type="text/javascript" src="js/main.js?ver=1.10"></script>
 	
     <script type="text/javascript">
@@ -100,7 +99,7 @@
                     <!-- Site Viewer-->
                     <div id="siteViewer" data-site-viewer-status="closed" class="distribution">
                         <div id="siteViewerHeader">
-							<span class="headerTitle">feeder</span> viewer
+							<div class="siteViewerHeaderTitle"><span id="site-viewer-title">feeder</span> viewer</div>
                             <div id="siteViewerClose" onclick="closeViewerPanel('siteViewer');"></div>
                         </div>
                         <div id="siteViewerOuterContent">
@@ -120,21 +119,32 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="siteInfoHeader">Total Poles:</td>
+                                            <td class="siteInfoHeader">Poles (Total):</td>
                                             <td class="siteInfoItem" id="distribution_inspections_total"></td>
                                         </tr>
                                     </table>
 									
 									<div id="distribution-class-legend" class="class-legend">
-										<table>
+										<table class="distribution-default">
 											<tr>
 												<td><div id="distribution-class-legend-1" class="class-legend-symbol" data-filter="" data-value=1></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
 												<td><div id="distribution-class-legend-2" class="class-legend-symbol" data-filter="" data-value=2></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
 												<td><div id="distribution-class-legend-3" class="class-legend-symbol" data-filter="" data-value=3></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
 												<td><div id="distribution-class-legend-4" class="class-legend-symbol" data-filter="" data-value=4></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
-												<td><div id="distribution-class-legend-5" class="class-legend-symbol" data-filter="" data-value=5></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
 											</tr>
 										</table>
+										
+										<table class="distribution-Duke">
+											<tr>
+												<!-- <td><div id="distribution-class-legend-Pending" class="class-legend-symbol" data-filter="" data-value=1></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td> -->
+												<td><div id="distribution-class-legend-Processed" class="class-legend-symbol" data-filter="" data-value=2></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-PendingMerge" class="class-legend-symbol" data-filter="" data-value=3></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-Complete" class="class-legend-symbol" data-filter="" data-value=4></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+												<td><div id="distribution-class-legend-Critical" class="class-legend-symbol" data-filter="" data-value=4></div><div class="class-legend-close"><i class="fa fa-times"></i></div></td>
+											</tr>
+										</table>
+										
+										
 									</div>
 									
 									
@@ -149,6 +159,10 @@
 											<i class="fa fa-map-marker fa-stack-1x downloadStackIcon" style="font-size: 12px;font-weight: normal;top: 2px;"></i>
 											</span>
 										</div>
+										
+										<div id="siteFeederVideo" class="downloadButton">
+                                            <i class="fa fa-video-camera downloadIcon"></i>
+                                        </div>
 										
 										<div id="siteFeederMapDownload" class="downloadButton" style="visibility:visible;">
 											<span class="fa-stack downloadStack">
@@ -181,6 +195,13 @@
                                             </span>
                                         </div>
                                     </div>
+									
+									<div id="poleSelectDiv">
+										<label id="poleSelectLabel" for="poleSelect">Search by ID:</label>
+										<input id="poleSelect">
+										<div id="poleSelectIcon"><i class="fa fa-search"></i></div>
+									</div>
+									
                                     <div id="siteInspectionDownloadProgress">
                                         <div id="siteInspectionDownloadProgressTooltip"></div>
                                         <div id="siteInspectionDownloadStatus">Preparing (0/0) ...</div>
@@ -245,6 +266,11 @@
                                             </span>
                                         </div>
                                     </div>
+									<div id="transmissionSelectDiv">
+										<label id="transmissionSelectLabel" for="transmissionSelect">Search by ID:</label>
+										<input id="transmissionSelect">
+										<div id="transmissionSelectIcon"><i class="fa fa-search"></i></div>
+									</div>
 									
                                 </div>
                                 <div id="transmissionViewerInnerCenter">
@@ -264,7 +290,6 @@
                     <!--Blade Viewer-->
                     <div id="bladeViewer" data-blade-viewer-status="closed">
                         <div id="bladeViewerHeader">
-							<span class="headerTitle">pole</span> viewer
                             <div id="bladeViewerClose" onclick="closeViewerPanel('bladeViewer');"></div>
                         </div>
                         <div id="bladeViewerOuterContent" class="scroll-pane">
@@ -275,13 +300,13 @@
 												<div id="siteTurbineBladeInfo">
 													<div>
 														<div class="bladeInfoRow">
-															<div class="bladeInfoHeader" style="width: 65px;">Feeder:</div>
+															<div id="site-name-header" class="bladeInfoHeader" style="width: 65px;">Feeder:</div>
 															<div class="bladeInfoItem" style="width: 200px;" id="siteId" data-site-id="0"></div>
 															<div class="bladeInfoHeader" style="width: 90px;">Work Order:</div>
 															<div class="bladeInfoItem" style="width: 100px;" id="workOrder" data-workorder-id="0"></div>
 														</div>
 														<div class="bladeInfoRow">
-															<div class="bladeInfoHeader" style="width: 65px;">Pole ID:</div>
+															<div id="asset-id-header" class="bladeInfoHeader" style="width: 65px;">Pole ID:</div>
 															<div class="bladeInfoItem" style="width: 200px;" id="turbineId" data-turbine-id="0" data-turbine-name="0"></div>
 															<div class="bladeInfoHeader" style="width: 75px;">Location:</div>
 															<div class="bladeInfoItem" style="width: 175px;" id="turbineLocation"></div>
@@ -295,25 +320,39 @@
 													</div>
 													
 													<div id="bladeInspectionReportButtonDiv">
+													
+														<div id="bladeInspectionAnomalyDownload" class="downloadButton">
+															<span class="fa-stack downloadStack">
+																<i class="fa fa-file fa-stack-1x"></i>
+																<i class="fa fa-exclamation fa-stack-1x downloadStackIcon"></i>
+															</span>
+														</div>
+														
+														<div id="bladeInspectionDroneSurveyDownload" class="downloadButton">
+															<span class="fa-stack downloadStack">
+																<i class="fa fa-file fa-stack-1x"></i>
+																<i class="fa fa-stack-1x downloadStackIcon">X</i>
+															</span>
+														</div>
 														
 														<div id="bladeInspectionXmlDownload" class="downloadButton">
 															<span class="fa-stack downloadStack">
-															<i class="fa fa-file fa-stack-1x"></i>
-															<i class="fa fa-code fa-stack-1x downloadStackIcon"></i>
+																<i class="fa fa-file fa-stack-1x"></i>
+																<i class="fa fa-code fa-stack-1x downloadStackIcon"></i>
 															</span>
 														</div>
 														
 														<div id="bladeInspectionForemanDownload" class="downloadButton">
 															<span class="fa-stack downloadStack">
-															<i class="fa fa-file fa-stack-1x"></i>
-															<i class="fa fa-file-pdf-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
+																<i class="fa fa-file fa-stack-1x"></i>
+																<i class="fa fa-file-pdf-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
 															</span>
 														</div>
 														
 														<div id="bladeInspectionReportDownload" class="downloadButton">
 															<span class="fa-stack downloadStack">
-															<i class="fa fa-file fa-stack-1x"></i>
-															<i class="fa fa-file-text-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
+																<i class="fa fa-file fa-stack-1x"></i>
+																<i class="fa fa-file-text-o fa-stack-1x downloadStackIcon" style="top:0px;font-size:24px;"></i>
 															</span>
 														</div>
 														
@@ -362,6 +401,13 @@
 										<div class="header">Inspection Details</div>
 										<div id="distributionInspectionDataTableContent" class="scroll-pane">
 											<table id="distributionInspectionDataTable" class="inspectionDataTable"></table>
+										</div>
+										<div id="dataMergedContent">
+											<div>
+												<span id="dataMergedHeader">In Design Manager?</span>
+												<span id="dataMergedCheck"><i class="fa fa-circle-o" aria-hidden="true"></i></span>
+											</div>
+											<div id="dataMergedDate">not uploaded</div>
 										</div>
 									</div>
 									
@@ -457,7 +503,6 @@
 					<!-- LAS Viewer -->
 					<div id="lasViewer" data-las-viewer-status="closed">
                         <div id="lasViewerHeader">
-							<span class="headerTitle">vegetation encroachment</span>
                             <div id="lasViewerClose" onclick="closeViewerPanel('lasViewer');"></div>
                         </div>
                         <div id="lasViewerOuterContent">
@@ -499,7 +544,7 @@
                     <div id="windSiteSelectContainer" class="toolTipContainer">
                         <div id="windSiteSelectContent" class="scroll-pane" >
                             <div id="windSiteSelectInnerContent">
-								<div id="distributionSelectorList"></div>
+								<div id="distributionSelectorList" class="activeView"></div>
 								<div id="transmissionSelectorList"></div>
 							</div>
                         </div>
@@ -507,27 +552,45 @@
                     <!--End Site Selector Dialog Section-->
                     
                     <div id="map-legend" class="map-legend">
-                        <table id="distribution-legend">
+                        <table class="legend distribution-default">
                             <tr>
-                                <td colspan=5>Horizontal Pole Loading (%)</td>
+                                <td colspan=4>Horizontal Pole Loading (%)</td>
                             </tr>
                             <tr>
                                 <td><div id="distribution-legend-1" class="map-legend-symbol"></div></td>
                                 <td><div id="distribution-legend-2" class="map-legend-symbol"></div></td>
                                 <td><div id="distribution-legend-3" class="map-legend-symbol"></div></td>
                                 <td><div id="distribution-legend-4" class="map-legend-symbol"></div></td>
-                                <td><div id="distribution-legend-5" class="map-legend-symbol"></div></td>
                             </tr>
                             <tr>
                                 <td id="map-legend-text-1">0-89</td>
                                 <td id="map-legend-text-2">90-99</td>
-                                <td id="map-legend-text-3">100-119</td>
-                                <td id="map-legend-text-4">120-200</td>
-                                <td id="map-legend-text-5">200+</td>
+                                <td id="map-legend-text-3">100-109</td>
+                                <td id="map-legend-text-4">110+</td>
                             </tr>
                         </table>
 						
-						<table id="transmission-legend">
+						<table class="legend distribution-Duke">
+                            <tr>
+                                <td colspan=4>Status</td>
+                            </tr>
+                            <tr>
+                                <!-- <td><div id="distribution-legend-Pending" class="map-legend-symbol"></div></td> -->
+                                <td><div id="distribution-legend-Processed" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-PendingMerge" class="map-legend-symbol"></div></td>
+                                <td><div id="distribution-legend-Complete" class="map-legend-symbol"></div></td>
+								<td><div id="distribution-legend-Critical" class="map-legend-symbol"></div></td>
+                            </tr>
+                            <tr>
+                                <!-- <td id="map-legend-text-Pending">Pending</td> -->
+                                <td id="map-legend-text-Processed">Processed</td>
+                                <td id="map-legend-text-PendingMerge">Pending Merge</td>
+                                <td id="map-legend-text-Complete">Complete</td>
+								<td id="map-legend-text-Critical">Critical</td>
+                            </tr>
+                        </table>
+						
+						<table  class="legend transmission-default">
                             <tr>
                                 <td colspan=3>Damage Assessment</td>
                             </tr>
@@ -554,10 +617,10 @@
             <!--End Footer-->
         </div>
 		
-		<div id="transmissionLineVideo" data-dojo-type="dijit.Dialog" data-dojo-id="transmissionLineVideo" data-dojo-props="title:'transmission line inspection video', draggable:true">
-            <div id="transmissionLineVideoContent" class="dialogContent" data-vjs-player>
-				<video id="transmission-video-player" class="video-js" data-setup='{ "controls": true, "autoplay": false, "preload": "auto", "width":900, "height":507 }'>
-				  <source src="video/Video_Inspection_Line_1001.mp4" type="video/mp4">
+		<div id="inspectionLineVideo" data-dojo-type="dijit.Dialog" data-dojo-id="inspectionLineVideo" data-dojo-props="title:'transmission line inspection video', draggable:true">
+            <div id="inspectionLineVideoContent" class="dialogContent" data-vjs-player>
+				<video id="inspection-video-player" class="video-js" data-setup='{ "controls": true, "autoplay": false, "preload": "auto", "width":900, "height":507 }'>
+				  <source src="video/poleAMS_viewer.mp4" type="video/mp4">
 				</video>
 			</div>
         </div>
