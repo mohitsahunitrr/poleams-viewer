@@ -53,30 +53,22 @@ dojo.require("dojo.date.locale");
 dojo.require("dojo.number");
 
 dojo.require("esri.map");
-dojo.require("esri.dijit.HomeButton")
 dojo.require("esri.layers.FeatureLayer");
 dojo.require("esri.virtualearth.VETiledLayer");
 dojo.require("esri.renderer");
 dojo.require("esri.layers.LayerDrawingOptions");
 dojo.require("esri.symbols.PictureMarkerSymbol");
 
-var map, veSatelliteTileLayer, veRoadTileLayer, windTileLayer, windFeatureLayer, initialExtent, tooltip, homeButton, symbol, highlightSymbol, bladeViewerOffset, tooltip, turbineBladeInspectionRecords;
+var map, veSatelliteTileLayer, veRoadTileLayer, windFeatureLayer, initialExtent, tooltip, symbol;
 
-var bladeViewerPosition = {"top": "20px", "left": "20px"}
-var turbineBladeInspectionFields = ["BLADE", "SERIAL", "SEVERITY", "TYPE", "SURFACE", "ROOT_DIST", "LE_DIST", "OBSERVATION", "IMAGES_GRID"];
-var turbineFields = ["TURBINE_ID", "INSPECTION_DATE", "MANUFACTURER", "MODEL", "MW_TURBINE", "ON_YEAR", "TOWER_HT", "TOTAL_HT", "BLADE_LEN", "ROTOR_DIA", "ROTOR_S_A","SeverityScore","InspectionEvents"];
-var overViewGridConnections = [];
 var inspectionEventsJsonResponse;
-var imageJsonResponse;
-
-var imageJson;
 var inspectionEventsJson;
 
 var date = new Date();
 var currentDate = (((date.getMonth())<9) ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1))  + "-" + ((date.getDate()<10) ? "0" + date.getDate() : date.getDate()) + "-" + date.getFullYear();
 
-var aboutVersion = "1.9.01"
-var aboutYearStart = 2014;
+var aboutVersion = "1.10.01"
+var aboutYearStart = 2018;
 var aboutYearEnd = date.getFullYear();
 
 var authUserObject = {};
@@ -91,16 +83,15 @@ var authExtent;
 var authRequest = {};
 var userNames = {};
 var uuids = [];
+var siteOrgs = {};
 
 var siteData = {};
 var sitesToProcess = [];
-var sitesAreProcess = [];
 var siteName;
 var siteId;
 var siteView = "DistributionLine";
 var turbineId;
 var turbineName;
-var turbineSiteViewerIndex;
 var turbineInspectionDate;
 var workOrderNumber;
 var lasDataAvailable = null;
@@ -179,9 +170,9 @@ var reportTypeOptions = [
 ];
 
 var elementTypeOptions = [
-    { label: "Blade Viewer", value: "Blade Viewer"  },
-    { label: "Blade Inspector", value: "Blade Inspector" },
-    { label: "Blade Images", value: "Blade Images"  },
+    { label: "Asset Viewer", value: "Asset Viewer"  },
+    { label: "Asset Inspector", value: "Asset Inspector" },
+    { label: "Asset Images", value: "Asset Images"  },
     { label: "Site Viewer", value: "Site Viewer" },
     { label: "Reports", value: "Report" },
     { label: "Map", value: "Map" },
@@ -244,293 +235,6 @@ var gridFields = {
         {"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false }
 	]
 };
-
-var eventHandles = {};
-
-var skinTemplate = {
-    "default": {
-        "windams": "windams_viewer_text",
-        "logo": "none",
-        "url": "http://www.inspectools.com",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "20px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right":"105px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"20px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "none"
-            }
-        }
-    },
-    "InspecToolsLLC": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/inspectools_logo.png)",
-        "url":"http://www.inspectools.com",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right":"205px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right":"290px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"205px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    },
-    "Vestas": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/vestas_logo.png)",
-         "url":"http://www.vestas.com",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "155px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right": "240px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"155px"
-            },
-            "headerRightDiv": {
-                "width": "150px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    },
-    "Siemens": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/martek_logo.png)",
-        "url":"http://www.martek-marine.com",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "205px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right": "290px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"205px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    },
-    "Martek Marine": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/martek_logo.png)",
-        "url":"http://www.martek-marine.com",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "205px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right": "290px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"205px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    },
-    "Windetect": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/windetect_logo.png)",
-        "url":"http://windetect.co.kr",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "205px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right": "290px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"205px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    },
-    "Aerial Vision": {
-        "windams": "windams_viewer_text",
-        "logo": "url(../images/logos/aerial_vision_logo.png)",
-        "url":"http://aerialvision.co.uk/",
-        "css": {
-            "header": {
-                "background": "#1a1a1a",
-                "color": "#ffffff"
-            },
-            "sign-in": {
-                "background": "#1a1a1a",
-                "color": "#adafaf",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "right": "205px",
-                "mouseOverBackground": "#2a2a2a",
-                "mouseOverColor": "#ffffff",
-            },
-            "current-user": {
-                "color": "#adafaf",
-                "right": "290px"
-            },
-            "loginDiv": {
-                "background": "#2a2a2a",
-                "borderLeft": "2px solid #3d3d3d",
-                "borderRight": "2px solid #3d3d3d",
-                "borderBottom": "2px solid #3d3d3d",
-                "right":"205px"
-            },
-            "headerRightDiv": {
-                "width": "204px",
-                "background": "#1a1a1a",
-                "mouseOverBackground": "#2a2a2a",
-                "display": "block"
-            }
-        }
-    } 
-}
-
-var authUserSkin = skinTemplate["default"];
-
-var authUserDamageOptionWhiteList = {
-    "default":["Component","Composite","Miscellaneous"],
-    "InspecToolsLLC":["Component","Composite","Miscellaneous"]
-}
-var authUserFilterOptionWhiteList = {
-    "default":{
-        "Component": ["Blade Collar","Diverter Strips","Drain Hole","Gurney Flap","ID Plate","LE Tape","Lightning Receptors","Spoiler","Stall Strip","Vortex Generators","Other"],
-        "Composite":["Charring","Chordwise Crack","Crazing","Crush","Debonding","Delamination","Dry Fiber","Erosion","Exposed Core","Exposed Laminate","Flagging","Hole","Lightning Strike","Old Repair","Pitting","Repair Failure","Scratch","Spar Damage","Spider Cracks","Split","Stress Crack","Thin Topcoat","Top-coat Flaking","Other"],
-        "Miscellaneous":["Dirty or Heavy Insect","Fluid Ingression","Grease","Mold","Surface Staining","Other"]
-    },
-    "InspecToolsLLC": {
-        "Component": ["Blade Collar","Diverter Strips","Drain Hole","Gurney Flap","ID Plate","LE Tape","Lightning Receptors","Spoiler","Stall Strip","Vortex Generators","Other"],
-        "Composite":["Charring","Chordwise Crack","Crazing","Crush","Debonding","Delamination","Dry Fiber","Erosion","Exposed Core","Exposed Laminate","Flagging","Hole","Lightning Strike","Old Repair","Pitting","Repair Failure","Scratch","Spar Damage","Spider Cracks","Split","Stress Crack","Thin Topcoat","Top-coat Flaking","Other"],
-        "Miscellaneous":["Dirty or Heavy Insect","Fluid Ingression","Grease","Mold","Surface Staining","Other"]
-    }
-}
-var authUserSurfaceOptionWhiteList = {
-    "default":["Leading Edge" ,"Trailing Edge","High Pressure Side","Low Pressure Side","Both Shells", "Tower","Nose Cone","Spinner, Shroud, or Hub","Nacelle"],
-    "InspecToolsLLC":["Leading Edge" ,"Trailing Edge","High Pressure Side","Low Pressure Side","Both Shells", "Tower","Nose Cone","Spinner, Shroud, or Hub","Nacelle"]
-}
 
 var assetJsonResponse = [];
 var Potree;

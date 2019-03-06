@@ -499,8 +499,7 @@ color: #F06927;
 
 .map-legend {
 position:absolute;
-width: 285px;
-right:20px;
+max-width: 425px;
 bottom: 20px;
 background: #fff;
 border-radius: 5px;
@@ -515,8 +514,13 @@ visibility:hidden;
 }
 
 .map-legend table {
+position:relative;
 width:275px;
 margin:5px;
+}
+
+.map-legend table.distribution-Duke {
+width:400px;
 }
 
 .class-legend {
