@@ -555,6 +555,10 @@ text-align:center;
 position: relative;
 }
 
+.map-legend td {
+width:25%;
+}
+
 .map-legend-symbol{
 position:relative;
 width:10px;

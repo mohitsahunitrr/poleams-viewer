@@ -842,8 +842,8 @@ function loadMainApp(){
 	
 	//added specifically for Duke Energy	
 	dojo.forEach(["Processed","PendingMerge","Complete","Critical"], function(level) {
-		dojo.style("distribution-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
-		dojo.style("distribution-class-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
+		dojo.style("distribution-legend-" + level, "backgroundColor", severityColors[level]);
+		dojo.style("distribution-class-legend-" + level, "backgroundColor", severityColors[level]);
 	});
 
 }
@@ -998,7 +998,7 @@ function loadMapLayers() {
 	  var attributes = {
 		"uniqueId":asset.id,
 		"organizationId":asset.organizationId,
-		"organizationName":authUserOrg.name,
+		"organizationName":siteOrgs[asset.organizationId].name,
 		"subStationId": asset.siteId,
 		"name": siteData[asset.siteId].name,
 		"feederNumber": siteData[asset.siteId].feederNumber,
@@ -1019,9 +1019,11 @@ function loadMapLayers() {
 		"reasonNotInspected": (asset.assetType == "TransmissionLine" && !_.isEmpty(asset.assetInspection)) ? asset.assetInspection.reasonNotInspected : null,
 		"materialType": asset.type
 	  };
-	  
-	  var criticalityProperty = (asset.assetType == "DistributionLine" && authUserOrgKey == "default") ? "criticality" : (asset.assetType == "DistributionLine" && authUserOrgKey == "default") ? "status" : "severity";
-	  attributes.criticality = (_.isEmpty(asset.assetInspection) || _.isNull(asset.assetInspection[criticalityProperty]) || !_.has(asset.assetInspection, criticalityProperty)) ? "NA" : asset.assetInspection[criticalityProperty];
+	  var orgKey = (_.contains(customSites, siteOrgs[asset.organizationId].key)) ? siteOrgs[asset.organizationId].key : "default";
+	  attributes.organizationKey = orgKey;
+	  var type = (asset.assetType == "DistributionLine") ? "distribution" : "transmission";
+	  var criticalityField = criticalProperty[type][orgKey];
+	  attributes.criticality = (_.isEmpty(asset.assetInspection) || _.isNull(asset.assetInspection[criticalityField]) || !_.has(asset.assetInspection, criticalityField)) ? "NA" : asset.assetInspection[criticalityField];
 	  
 	  graphic.setGeometry(geometry); 
 	  graphic.setAttributes(attributes);
@@ -1387,7 +1389,7 @@ function populateSiteViewerContent(id, selectId) {
 	
 	var viewId = (siteView == "DistributionLine") ? "site" : "transmission";
 	
-	updateUIbySiteOrg(id, viewId);
+	updateUIbySiteOrg(id, siteView);
 	
 	var distributionDisplay = (siteView == "DistributionLine") ? "table" : "none";
 	var transmissionDisplay = (siteView == "TransmissionLine") ? "table" : "none";
@@ -1422,7 +1424,7 @@ function populateSiteViewerContent(id, selectId) {
 		
 		var player = videojs('inspection-video-player');
 		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
-		if (videos.length > 0) {
+		if (!_.isUndefined(videos) && videos.length > 0) {
 			var src = videos[0];
 			var srcs = [ { "type": "video/mp4", "src": src } ];
 			player.src(srcs);
@@ -1515,14 +1517,14 @@ function summarizeCriticality() {
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	var assets = (viewId == "distribution") ? "poleSummary" : "structureSummary";
 	var assetInspections = (viewId == "distribution") ? "poleInspectionSummary" : "structureInspectionSummary";
-	var property = (viewId == "distribution" && authUserOrgKey == "default") ? "criticality" : (viewId == "distribution" && authUserOrgKey == "default") ? "status" : "severity";
+	var property = criticalProperty[viewId][authUserOrgKey];
 	
 	var data = siteData[siteId].workOrders[workOrderNumber].summary.data;
 	var structures = siteData[siteId].workOrders[workOrderNumber].summary.objects[assets];
 	var inspections = siteData[siteId].workOrders[workOrderNumber].summary.objects[assetInspections];
 	var total = _.keys(data).length;
 	
-	var criticalClass = (siteView == "DistributionLine") ? dojo.clone(criticalClasses[viewId][authUserOrgKey]) : dojo.clone(criticalClasses[viewId]);
+	var criticalClass = dojo.clone(criticalClasses[viewId][authUserOrgKey]);
 	
 	var maxClass = _.max(_.keys(criticalClass));
 	dojo.forEach(data, function(i) {
@@ -1552,7 +1554,6 @@ function switchViews(view) {
 	
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	dojo.removeClass(dojo.byId("siteViewer"), "distribution transmission");
-	dojo.byId("site-viewer-title").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "feeder" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "circuit" : "line";
 	dojo.addClass(dojo.byId("siteViewer"), viewId);
 	
 	dojo.removeClass(dojo.byId("bladeViewer"), "distribution transmission");
@@ -1565,7 +1566,6 @@ function switchViews(view) {
 	dojo.addClass(dojo.byId(viewId + "SelectorList"), "activeView");
 	renderWindSiteSelector();
 	
-	dojo.byId("asset-site-name-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
 	var width = (viewId == "distribution") ? "65px" : "50px";
 	dojo.query("#asset-site-name-header").style("width", width);
 	
@@ -1578,10 +1578,6 @@ function switchViews(view) {
 	
 	var width = (viewId == "distribution") ? "200px" : "165px";
 	dojo.query("#turbineId").style("width", width);
-	
-	dojo.byId("pole-criticality-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Horizontal Pole Loading (%):" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Pole Status:": "Damage Assessment:";
-	var width = (viewId == "distribution" && authUserOrgKey == "default") ? "200px" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "90px" : "165px";
-	dojo.query("#pole-criticality-header").style("width", width);
 	
 	var aiDisplay = (siteView == "TransmissionLine") ? "block" : "none";
 	dojo.style(dojo.byId("ai-button"), "display", aiDisplay);
@@ -1614,8 +1610,9 @@ function populateBladeViewerContent(feature, open) {
 	dojo.byId("turbineId").innerHTML = name;
 	dojo.byId("turbineLocation").innerHTML = x + " , " + y;
 	
-	dojo.byId("pole-criticality").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? attributes["horizontalLoadingPercent"] : "";
-	var backgroundColor = (viewId == "distribution" && authUserOrgKey == "default") ? severityColors[criticality] : (viewId == "distribution" && authUserOrgKey == "Duke") ? dukeSeverityColors[criticality] : transmissionSeverityColors[criticality];
+	var crticalValue = (_.isNull(uiConfig[siteView][authUserOrgKey]["pole-criticality-field"])) ? "" : attributes[uiConfig[siteView][authUserOrgKey]["pole-criticality-field"]]
+	dojo.byId("pole-criticality").innerHTML = crticalValue;
+	var backgroundColor = (viewId == "distribution") ? severityColors[criticality] : transmissionSeverityColors[criticality];
 	dojo.style(dojo.byId("pole-criticality"), "backgroundColor", backgroundColor);
 	
 	dojo.attr("siteId", "data-site-id", siteId);
@@ -2285,10 +2282,7 @@ function populatePoleRecordTable(features, selectId){
 				header.formatter = function(val, rowIdx, cell) {
 					var severity = _.first(this.grid.getItem(rowIdx)["criticality"]);
 					var uniqueId = _.first(this.grid.getItem(rowIdx)["uniqueId"]);
-					
-					var colors = (authUserOrgKey == "default") ? severityColors : dukeSeverityColors;
-					
-					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + colors[severity] + ';">i</div></div>' 
+					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + severityColors[severity] + ';">i</div></div>' 
 				};
 			}
 			if (header.field == 'Horizontal Pole Loading') {
@@ -2348,13 +2342,12 @@ function populatePoleRecordTable(features, selectId){
 		
 		dojo.connect(grid, "onCellMouseOver", function(e){
 			if (this.getItem(e.rowIndex)) {
-				if (e.cell.field == "criticality" && authUserOrgKey == "default") {
-					var content = 'Horizontal Pole Loading (%): ' + this.getItem(e.rowIndex)["Horizontal Pole Loading"] + '<br>';
+				var content = '';
+				if (e.cell.field == "criticality") {
+					if (authUserOrgKey == "default") {
+						content += 'Horizontal Pole Loading (%): ' + this.getItem(e.rowIndex)["Horizontal Pole Loading"] + '<br>';
+					}
 					content += 'Click to review the inspection of this pole in the Pole Viewer';
-					showToolTip(e, content);
-				}
-				if (e.cell.field == "criticality" && authUserOrgKey == "Duke") {
-					var content = 'Click to review the inspection of this pole in the Pole Viewer';
 					showToolTip(e, content);
 				}
 			}
@@ -2378,7 +2371,7 @@ function populatePoleRecordTable(features, selectId){
 
 function populateStructureRecordTable(features, selectId){
 	
-    var authUserFields = gridFields["TransmissionLine"];
+    var authUserFields = gridFields["TransmissionLine"][authUserOrgKey];
     
 	var fields = {}
 	dojo.forEach(authUserFields, function (field) {
@@ -2501,54 +2494,27 @@ function populateStructureRecordTable(features, selectId){
 
 function createGridDataStore(id, workOrder, data, type) {
 	
-	var orgKey = siteOrgs[siteData[id].organizationId].key;
-	orgKey = (orgKey != "Duke") ? "default" : orgKey;
-	
-	var authUserFields = (type == "DistributionLine") ? gridFields[type][orgKey] : gridFields[type];
-    
-	var fields = {}
-	dojo.forEach(authUserFields, function (field) {
-		fields[field.name] = field.alias;
-	});
+	var orgKey = (_.contains(customSites, siteOrgs[siteData[id].organizationId].key)) ? siteOrgs[siteData[id].organizationId].key : "default";
+	var authUserFields = gridFields[type][orgKey];
 	
 	gridItems = [];
 	dojo.forEach(data, function (asset){
 		var item = {};
 		item['uniqueId'] = asset.id;
-		
-		if (type == "DistributionLine") {
-			item[fields['poleId']] = asset.utilityId;
-			item[fields['dateOfAnalysis']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dateOfAnalysis)) ? convertDate(asset.assetInspection.dateOfAnalysis, "viewer") : " -- ";
+		dojo.forEach(authUserFields, function(field) {
 			
-			if (orgKey == "default") {
-				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.criticality)) ? asset.assetInspection.criticality : "NA";
-				item[fields['horizontalLoadingPercent']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.horizontalLoadingPercent)) ? asset.assetInspection.horizontalLoadingPercent : " -- ";
-				item[fields['dataMergedDate']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dataMergedDate)) ? convertDate(asset.assetInspection.dataMergedDate, "viewer") : " -- ";
+			if (field.dataType == "uid") {
+				var value = asset[field.property];
+			} else if (field.dataType == "date") {
+				var value = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection[field.property])) ? convertDate(asset.assetInspection[field.property], "viewer") : field.nullValue;
+			} else {
+				var value = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection[field.property])) ? asset.assetInspection[field.property] : field.nullValue;
 			}
 			
-			if (orgKey == "Duke") {
-				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "NA";
-				item[fields['status']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "Pending";
-			}
-			
-		}
-		
-		if (type == "TransmissionLine") {
-			item[fields['poleId']] = asset.structureNumber;
-			item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.severity)) ? asset.assetInspection.severity : "NA";
-			item[fields['dateOfInspection']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dateOfInspection)) ? convertDate(asset.assetInspection.dateOfInspection, "viewer") : " -- ";
-		}
-		
+			item[field.alias] = value;
+		})
 		gridItems.push(item);
 	});
-	/* gridItems.sort(function (a,b) {
-		// this sorts the array of json objects using the name key
-		var idA = (isNaN(parseInt(a[fields["poleId"]].slice(-1)))) ? a[fields["poleId"]].replace(/^([ABCDEFGHIJKLMNOPQRSTUVWXYZ]+)/gi,'') : parseInt(a[fields["poleId"]].replace(/\D/g,''));
-		var idB = (isNaN(parseInt(b[fields["poleId"]].slice(-1)))) ? b[fields["poleId"]].replace(/^([ABCDEFGHIJKLMNOPQRSTUVWXYZ]+)/gi,'') : parseInt(b[fields["poleId"]].replace(/\D/g,''));
-		var a1 = typeof idA, b1=typeof idB;
-		return a1<b1 ? -1 :a1>b1 ? 1 : idA<idB ? -1 : idA>idB ? 1 : 0;
-		
-	}); */
 	gridItems.sort();
 	
 	var data = {
@@ -3106,23 +3072,22 @@ function openAboutDialog(){
 
 function updateUIbySiteOrg(id, viewId) {
 	var orgKey = siteOrgs[siteData[id].organizationId].key;
-	authUserOrgKey = (orgKey == "Duke") ? orgKey : "default";
+	authUserOrgKey = (_.contains(customSites, orgKey)) ? orgKey : "default";;
 	
 	dojo.query("table[class*='distribution-'").style("display","none");
 	dojo.query(".distribution-" + authUserOrgKey).style("display","table");
 	
-	dojo.byId("site-viewer-title").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "feeder" : (viewId == "site" && authUserOrgKey == "Duke") ? "circuit" : "line";
+	dojo.byId("site-viewer-title").innerHTML = uiConfig[viewId][authUserOrgKey]["site-viewer-title"];
+	dojo.byId("site-name-header").innerHTML = uiConfig[viewId][authUserOrgKey]["site-name-header"];
 	
-	dojo.byId("site-name-header").innerHTML = (authUserOrgKey == "default") ? "Feeder:" : "Circuit:";
-	
-	dojo.byId("asset-site-name-header").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "site" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
-	var width = (viewId == "distribution") ? "65px" : "50px";
+	dojo.byId("asset-site-name-header").innerHTML = uiConfig[viewId][authUserOrgKey]["site-name-header"];
+	var width = uiConfig[viewId][authUserOrgKey]["site-name-width"];
 	dojo.query("#asset-site-name-header").style("width", width);
 	
-	dojo.byId("pole-criticality-header").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "Horizontal Pole Loading (%):" : (viewId == "site" && authUserOrgKey == "Duke") ? "Pole Status:": "Damage Assessment:";
-	var width = (viewId == "site" && authUserOrgKey == "default") ? "200px" : (viewId == "site" && authUserOrgKey == "Duke") ? "90px" : "165px";
+	dojo.byId("pole-criticality-header").innerHTML = uiConfig[viewId][authUserOrgKey]["pole-criticality-header"];
+	var width = uiConfig[viewId][authUserOrgKey]["pole-criticality-width"];
 	dojo.query("#pole-criticality-header").style("width", width);
 	
-	var display = (authUserOrgKey != "Duke") ? "block" : "none";
+	var display = (!_.contains(customSites, authUserOrgKey)) ? "block" : "none";
 	dojo.query("#dataMergedContent").style("display", display);
 }

@@ -254,7 +254,6 @@ function loginSuccess(response) {
 	authUser = authUserObject.firstName + " " +  authUserObject.lastName;
 	authUserId = authUserObject.userId;
 	authUserOrg = _.first(authUserObject.organizations);
-	authUserOrgKey = (authUserOrg.key == "Duke") ? authUserOrg.key : "default";
 	
 	getOrgs(_.keys(authUserObject.sitesByOrganization));
 	getTranslation(authUserOrg.id);
@@ -273,8 +272,6 @@ function loginSuccess(response) {
 	dojo.style('bladeViewerButton', 'display', 'block');
 	dojo.style('siteViewerButton', 'display', 'block');
 	dojo.style('switchViewButton', 'display', 'block');
-	
-	//dojo.style('map-legend', 'visibility', 'visible');
 }
 
 function loginError(type) {
