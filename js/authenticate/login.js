@@ -256,6 +256,7 @@ function loginSuccess(response) {
 	authUserOrg = _.first(authUserObject.organizations);
 	authUserOrgKey = (authUserOrg.key == "Duke") ? authUserOrg.key : "default";
 	
+	getOrgs(_.keys(authUserObject.sitesByOrganization));
 	getTranslation(authUserOrg.id);
 	
 	dojo.query(".login-progress-tracker").style("display", "none");
@@ -273,26 +274,7 @@ function loginSuccess(response) {
 	dojo.style('siteViewerButton', 'display', 'block');
 	dojo.style('switchViewButton', 'display', 'block');
 	
-	dojo.style('map-legend', 'visibility', 'visible');
-	
-	dojo.query("table[class*='distribution-'").style("display","none");
-	dojo.query(".distribution-" + authUserOrgKey).style("display","table");
-	
-	dojo.query("#dataMergedContent").style("display", "block");
-	
-	if (authUserOrgKey == "Duke") {
-		
-		dojo.forEach(["Processed","PendingMerge","Complete","Critical"], function(level) {
-			dojo.style("distribution-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
-			dojo.style("distribution-class-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
-		});
-		
-		dojo.byId("site-viewer-title").innerHTML = "circuit";
-		dojo.byId("pole-criticality-header").innerHTML = "Pole Status:";
-		dojo.query("#pole-criticality-header").style("width", "90px");
-		dojo.query("#dataMergedContent").style("display", "none");
-		
-	}
+	//dojo.style('map-legend', 'visibility', 'visible');
 }
 
 function loginError(type) {
@@ -349,7 +331,6 @@ function getFeeders(sites) {
 	var feeders = _.filter(sites, function(site) { return _.has(site, "feederNumber"); });
 	parseFeeders(feeders);
 }
-
 
 function getTransmissionLines(sites) {
 	var transmissionLines = _.filter(sites, function(site) { return _.has(site, "lineNumber"); });
@@ -434,9 +415,9 @@ function parseFeeders(feederList) {
 							siteData[feeder.id].workOrders = {};
 						}
 						
-						if (!_.isNull(workOrder.orderNumber)) {
-							feederIds.push(feeder.id);
-							sitesToProcess.push(feeder.id);
+						if (!_.isNull(workOrder.orderNumber) && !_.contains(sitesToProcess, feeder.id + "-" + workOrder.orderNumber)) {
+							feederIds.push(feeder.id + "-" + workOrder.orderNumber);
+							sitesToProcess.push(feeder.id + "-" + workOrder.orderNumber);
 							
 							siteData[feeder.id].workOrders[workOrder.orderNumber] = {};
 							siteData[feeder.id].workOrders[workOrder.orderNumber].description = workOrder.description;
@@ -472,7 +453,6 @@ function parseFeeders(feederList) {
 								authSites.push(site);
 							}
 							
-							
 							if (sitesToProcess.length <= 1) {
 								dojo.query(".login-progress-tracker").style("display", "none");
 								dojo.style("data-retrieve-message", "margin-bottom", "15px");
@@ -489,7 +469,7 @@ function parseFeeders(feederList) {
 								innerHTML:"" + siteData[feeder.id].name + "-" + siteData[feeder.id].feederNumber + " (" + workOrder.orderNumber +")"
 							}, tr);
 							var td = dojo.create("td", {
-								class:"site-download-wait " + feeder.id,
+								class:"site-download-wait " + feeder.id + "-" + workOrder.orderNumber,
 								innerHTML:"<i class='fa fa-circle-o-notch fa-spin'></i>"
 							}, tr);
 							loginProgress.resize();
@@ -564,9 +544,9 @@ function parseTransmissionLines(transmissionLineList) {
 							siteData[transmissionLine.id].workOrders = {};
 						}
 						
-						if (!_.isNull(workOrder.orderNumber)) {
-							transmissionLineIds.push(transmissionLine.id);
-							sitesToProcess.push(transmissionLine.id);
+						if (!_.isNull(workOrder.orderNumber) && !_.contains(sitesToProcess, transmissionLine.id + "-" + workOrder.orderNumber)) {
+							transmissionLineIds.push(transmissionLine.id + "-" + workOrder.orderNumber);
+							sitesToProcess.push(transmissionLine.id + "-" + workOrder.orderNumber);
 							
 							siteData[transmissionLine.id].workOrders[workOrder.orderNumber] = {};
 							siteData[transmissionLine.id].workOrders[workOrder.orderNumber].description = workOrder.description;
@@ -619,7 +599,7 @@ function parseTransmissionLines(transmissionLineList) {
 								innerHTML:"" + siteData[transmissionLine.id].name + " (" + workOrder.orderNumber +")"
 							}, tr);
 							var td = dojo.create("td", {
-								class:"site-download-wait " + transmissionLine.id,
+								class:"site-download-wait " + transmissionLine.id + "-" + workOrder.orderNumber,
 								innerHTML:"<i class='fa fa-circle-o-notch fa-spin'></i>"
 							}, tr);
 							loginProgress.resize();
@@ -658,6 +638,128 @@ function parseTransmissionLines(transmissionLineList) {
     } else {
 		dijit.byId('transmissionViewerDropDown').addOption({ label: '', value: '' });
 	}
+}
+
+function getSiteSummary(id, siteId, workOrder, type) {
+	
+	var apiObj = (type == "distribution") ? "feederInspection" : "transmissionLineInspection";
+	var assetSummaryDeferred = dojo.xhrGet({
+		url: serviceApiUrl + apiObj + "/" + id + "/summary",
+		handleAs: "json",
+		headers: {
+			"Content-Type": "application/json",
+			"Authorization": "Bearer " + accessToken
+		}
+	})
+	assetSummaryDeferred.then(function(response) {
+		if (type == "distribution") {
+			var feeder = response;
+			if (_.has(siteData[siteId].workOrders, workOrder)) {
+				siteData[siteId].workOrders[workOrder].summary = {};
+				siteData[siteId].workOrders[workOrder].summary.name = feeder.name;
+				siteData[siteId].workOrders[workOrder].summary.feederNumber = feeder.feederNumber;
+				siteData[siteId].workOrders[workOrder].summary.windZone = feeder.windZone;
+				siteData[siteId].workOrders[workOrder].summary.hardeningLevel = feeder.hardeningLevel;
+				
+				siteData[siteId].workOrders[workOrder].summary.feederMapDownloadURL = feeder.feederMapDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = feeder.summaryReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.anomalyReportDownloadURL = feeder.anomalyReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.anomalyMapDownloadURL = feeder.anomalyMapDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.surveyReportDownloadURL = feeder.surveyReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentGoogleEarthURL = feeder.vegitationEncroachmentGoogleEarthURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentReportDownloadURL = feeder.vegitationEncroachmentReportDownloadURL;
+				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentShapeDownloadURL = feeder.vegitationEncroachmentShapeDownloadURL;
+				
+				siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = feeder.inspectionFlightVideos;
+				
+				siteData[siteId].workOrders[workOrder].summary.objects = {};
+				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary = feeder;
+				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary.feederNumber = feeder.feederNumber;
+				siteData[siteId].workOrders[workOrder].summary.objects.poleSummary = feeder.polesByFPLId;
+				siteData[siteId].workOrders[workOrder].summary.objects.poleInspectionSummary = feeder.poleInspectionsByFPLId;
+				
+				dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.poleSummary), function(fplid) {				
+					var asset = siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid];
+					if (_.isNull(asset.location)) {
+						siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
+					}
+				})
+				
+				siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(feeder.polesByFPLId), function(fplid) {
+					var pole = dojo.clone(feeder.polesByFPLId[fplid]);
+					pole.assetInspection = (!_.isUndefined(feeder.poleInspectionsByFPLId[fplid])) ? dojo.clone(feeder.poleInspectionsByFPLId[fplid]) : {};
+					return pole;
+				});
+				
+				createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "DistributionLine");
+			}
+		}
+		if (type == "transmission") {
+			var transmissionLine = response;
+			if (_.has(siteData[siteId].workOrders, workOrder)) {
+				siteData[siteId].workOrders[workOrder].summary = {};
+					siteData[siteId].workOrders[workOrder].summary.name = siteData[siteId].name;
+					siteData[siteId].workOrders[workOrder].summary.lineNumber = siteData[siteId].lineNumber;
+					
+					siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = transmissionLine.summaryReportDownloadURL;
+					siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = transmissionLine.inspectionFlightVideos;
+					
+					siteData[siteId].workOrders[workOrder].summary.objects = {};
+					siteData[siteId].workOrders[workOrder].summary.objects.transmissionLineSummary = transmissionLine;
+					
+					siteData[siteId].workOrders[workOrder].summary.objects.structureSummary = transmissionLine.structures;
+					siteData[siteId].workOrders[workOrder].summary.objects.structureInspectionSummary = transmissionLine.structureInspections;
+					
+					dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.structureSummary), function(id) {				
+						var asset = siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id];
+						if (_.isNull(asset.location)) {
+							siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
+						}
+					})
+					
+					siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(transmissionLine.structures), function(id) {
+						var asset = dojo.clone(transmissionLine.structures[id]);
+						asset.assetInspection = (!_.isUndefined(transmissionLine.structureInspections[id])) ? dojo.clone(transmissionLine.structureInspections[id]) : {};
+						
+						if (!_.isEmpty(asset.assetInspection)) {
+							asset.assetInspection.inspectionEvents = {};
+							asset.assetInspection.inspectionEvents.events = [];
+							asset.assetInspection.inspectionEventResources = {};
+							asset.assetInspection.inspectionEventResources.polys = [];
+							dojo.forEach(asset.assetInspection.flightImages, function(image) {
+									image.polys = [];
+							});
+						}
+						
+						return asset;
+					});
+					
+					createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "TransmissionLine");
+			}
+		}	
+		
+		var tds = dojo.query(".site-download-wait." + siteId + "-" + workOrder);
+		dojo.forEach(tds, function(td) {
+			td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>";
+		})
+		sitesToProcess = _.without(sitesToProcess, siteId + "-" + workOrder);
+		
+		if (sitesToProcess.length == 0) {
+			finishDataParsing();
+		}
+		
+	},
+	function(err) {
+		var tds = dojo.query(".site-download-wait." + siteId + "-" + workOrder);
+		dojo.forEach(tds, function(td) {
+			td.innerHTML = "<i class='fa fa-times-circle site-download-wait'></i>";
+		})
+		sitesToProcess = _.without(sitesToProcess, siteId + "-" + workOrder);
+		
+		if (sitesToProcess.length == 0) {
+			finishDataParsing();
+		}
+	})
 }
 
 function finishDataParsing(){	
@@ -775,120 +877,21 @@ function getTranslation(id){
 	});
 }
 
-function getSiteSummary(id, siteId, workOrder, type) {
-	
-	var apiObj = (type == "distribution") ? "feederInspection" : "transmissionLineInspection";
-	var assetSummaryDeferred = dojo.xhrGet({
-		url: serviceApiUrl + apiObj + "/" + id + "/summary",
-		handleAs: "json",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": "Bearer " + accessToken
-		}
-	})
-	assetSummaryDeferred.then(function(response) {
-		if (type == "distribution") {
-			var feeder = response;
-			if (_.has(siteData[siteId].workOrders, workOrder)) {
-				siteData[siteId].workOrders[workOrder].summary = {};
-				siteData[siteId].workOrders[workOrder].summary.name = feeder.name;
-				siteData[siteId].workOrders[workOrder].summary.feederNumber = feeder.feederNumber;
-				siteData[siteId].workOrders[workOrder].summary.windZone = feeder.windZone;
-				siteData[siteId].workOrders[workOrder].summary.hardeningLevel = feeder.hardeningLevel;
-				
-				siteData[siteId].workOrders[workOrder].summary.feederMapDownloadURL = feeder.feederMapDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = feeder.summaryReportDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.anomalyReportDownloadURL = feeder.anomalyReportDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.anomalyMapDownloadURL = feeder.anomalyMapDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.surveyReportDownloadURL = feeder.surveyReportDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentGoogleEarthURL = feeder.vegitationEncroachmentGoogleEarthURL;
-				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentReportDownloadURL = feeder.vegitationEncroachmentReportDownloadURL;
-				siteData[siteId].workOrders[workOrder].summary.vegitationEncroachmentShapeDownloadURL = feeder.vegitationEncroachmentShapeDownloadURL;
-				
-				siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = feeder.inspectionFlightVideos;
-				
-				siteData[siteId].workOrders[workOrder].summary.objects = {};
-				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary = feeder;
-				siteData[siteId].workOrders[workOrder].summary.objects.subStationSummary.feederNumber = feeder.feederNumber;
-				siteData[siteId].workOrders[workOrder].summary.objects.poleSummary = feeder.polesByFPLId;
-				siteData[siteId].workOrders[workOrder].summary.objects.poleInspectionSummary = feeder.poleInspectionsByFPLId;
-				
-				dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.poleSummary), function(fplid) {				
-					var asset = siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid];
-					if (_.isNull(asset.location)) {
-						siteData[siteId].workOrders[workOrder].summary.objects.poleSummary[fplid].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
-					}
-				})
-				
-				siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(feeder.polesByFPLId), function(fplid) {
-					var pole = dojo.clone(feeder.polesByFPLId[fplid]);
-					pole.assetInspection = (!_.isUndefined(feeder.poleInspectionsByFPLId[fplid])) ? dojo.clone(feeder.poleInspectionsByFPLId[fplid]) : {};
-					return pole;
-				});
-				
-				createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "DistributionLine");
+function getOrgs(orgIds) {
+	dojo.forEach(orgIds, function(orgId) {
+		dojo.xhrGet({
+			url: serviceApiUrl + "org/" + orgId,
+			handleAs: "json",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": "Bearer " + accessToken
+			},
+			load: function(results){
+				siteOrgs[orgId] = results;
+			},
+			error: function(error) {
+				console.log(error);
 			}
-		}
-		if (type == "transmission") {
-			var transmissionLine = response;
-			if (_.has(siteData[siteId].workOrders, workOrder)) {
-				siteData[siteId].workOrders[workOrder].summary = {};
-					siteData[siteId].workOrders[workOrder].summary.name = siteData[siteId].name;
-					siteData[siteId].workOrders[workOrder].summary.lineNumber = siteData[siteId].lineNumber;
-					
-					siteData[siteId].workOrders[workOrder].summary.summaryReportDownloadURL = transmissionLine.summaryReportDownloadURL;
-					siteData[siteId].workOrders[workOrder].summary.inspectionFlightVideos = transmissionLine.inspectionFlightVideos;
-					
-					siteData[siteId].workOrders[workOrder].summary.objects = {};
-					siteData[siteId].workOrders[workOrder].summary.objects.transmissionLineSummary = transmissionLine;
-					
-					siteData[siteId].workOrders[workOrder].summary.objects.structureSummary = transmissionLine.structures;
-					siteData[siteId].workOrders[workOrder].summary.objects.structureInspectionSummary = transmissionLine.structureInspections;
-					
-					dojo.forEach(_.keys(siteData[siteId].workOrders[workOrder].summary.objects.structureSummary), function(id) {				
-						var asset = siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id];
-						if (_.isNull(asset.location)) {
-							siteData[siteId].workOrders[workOrder].summary.objects.structureSummary[id].location = { "accuracy":null,"altitude":null, "latitude": 0, "longitude": 0 };
-						}
-					})
-					
-					siteData[siteId].workOrders[workOrder].summary.data = dojo.map(_.keys(transmissionLine.structures), function(id) {
-						var asset = dojo.clone(transmissionLine.structures[id]);
-						asset.assetInspection = (!_.isUndefined(transmissionLine.structureInspections[id])) ? dojo.clone(transmissionLine.structureInspections[id]) : {};
-						
-						if (!_.isEmpty(asset.assetInspection)) {
-							asset.assetInspection.inspectionEvents = {};
-							asset.assetInspection.inspectionEvents.events = [];
-							asset.assetInspection.inspectionEventResources = {};
-							asset.assetInspection.inspectionEventResources.polys = [];
-							dojo.forEach(asset.assetInspection.flightImages, function(image) {
-									image.polys = [];
-							});
-						}
-						
-						return asset;
-					});
-					
-					createGridDataStore(siteId, workOrder, siteData[siteId].workOrders[workOrder].summary.data, "TransmissionLine");
-			}
-		}	
-		
-		var td = _.first(dojo.query(".site-download-wait." + siteId));
-		td.innerHTML = "<i class='fa fa-check-circle site-download-wait'></i>";
-		sitesToProcess = _.without(sitesToProcess, siteId);
-		
-		if (sitesToProcess.length == 0) {
-			finishDataParsing();
-		}
-		
-	},
-	function(err) {
-		var td = _.first(dojo.query(".site-download-wait." + siteId));
-		td.innerHTML = "<i class='fa fa-times-circle site-download-wait'></i>";
-		sitesToProcess = _.without(sitesToProcess, siteId);
-		
-		if (sitesToProcess.length == 0) {
-			finishDataParsing();
-		}
+		});
 	})
 }

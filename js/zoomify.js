@@ -1303,23 +1303,6 @@ function populateRollbackInspectionEvent(id) {
 	});
 }
 
-function filterFindingTypeOptions(){ 
-    if (authUserOrg.key != "Vestas") {
-		var damageType = dijit.byId("damageTypeDropdown").get("value");
-		var whiteListKey = (_.has(authUserFilterOptionWhiteList, authUserOrg.key)) ? authUserOrg.key : "default";
-		var whiteList = dojo.clone(authUserFilterOptionWhiteList[whiteListKey][damageType]);
-		whiteList.push(dijit.byId("findingTypeDropdown").get("value"));
-		
-		var dropDownNodes = _.first(dijit.byId("findingTypeDropdown").dropDown.domNode.children).childNodes;
-		dojo.forEach(dropDownNodes, function(node){
-			var text = _.first(dojo.query("#" + node.id + "_text")).innerHTML;
-			if (dojo.indexOf(whiteList, text) == -1) {
-				dojo.style(node, "display","none");
-			}
-		})
-	}
-}
-
 function createInspectionEvent(){
     inspectorEvent = 'addEvent';
     

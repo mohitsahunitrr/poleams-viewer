@@ -837,8 +837,15 @@ function loadMainApp(){
 				map.centerAt(geometry);
 			}
 		}
-	}, dojo.byId("transmissionSelect"));	
+	}, dojo.byId("transmissionSelect"));
 	
+	
+	//added specifically for Duke Energy	
+	dojo.forEach(["Processed","PendingMerge","Complete","Critical"], function(level) {
+		dojo.style("distribution-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
+		dojo.style("distribution-class-legend-" + level, "backgroundColor", dukeSeverityColors[level]);
+	});
+
 }
 
 function advanceToNextImage(imgType, imgId, imgName, imgLabel, zUrl){
@@ -961,14 +968,7 @@ function loadMapLayers() {
 			if(_.has(siteData[siteId].workOrders[workOrder], "summary")) {
 				dojo.forEach(siteData[siteId].workOrders[workOrder].summary.data, function(asset) {
 					var exists = _.contains(assetIds, asset.id);
-					if (!exists) {
-						/* if (!(assetType == "TransmissionLine" && !_.isEmpty(asset.assetInspection) && asset.assetInspection.reasonNotInspected == "In Substation")) {
-							assetIds.push(asset.id);
-							asset.organizationId = siteData[siteId].organizationId;
-							asset.assetType = assetType;
-							authUserAssets.push(asset);
-						} */
-						
+					if (!exists) {						
 						assetIds.push(asset.id);
 						asset.organizationId = siteData[siteId].organizationId;
 						asset.assetType = assetType;
@@ -1068,9 +1068,6 @@ function loadMapLayers() {
 	  outFields: ["*"],
 	  opacity: 1
 	});
-	
-	/* symbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_CIRCLE, 10, new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID, new dojo.Color([255,255,255,1]), 1), new dojo.Color([200,200,200,1]));
-	windFeatureLayer.setRenderer(new esri.renderer.SimpleRenderer(symbol)); */
 	
 	var assetMarkerSymbol = new esri.symbol.PictureMarkerSymbol();
 	assetMarkerSymbol.setHeight(20);
@@ -1314,6 +1311,9 @@ function chooseAssetSite(id) {
 }
 
 function setSiteViewerContent(selectId) {
+	
+	dojo.style("mapProgressBar", { "display":"block" });
+	
 	var viewId = (siteView == "DistributionLine") ? "site" : "transmission";
 	var id = dijit.byId(viewId + 'ViewerDropDown').get('value');
 			
@@ -1386,6 +1386,9 @@ function updateWorkOrderDropdown(id) {
 function populateSiteViewerContent(id, selectId) {
 	
 	var viewId = (siteView == "DistributionLine") ? "site" : "transmission";
+	
+	updateUIbySiteOrg(id, viewId);
+	
 	var distributionDisplay = (siteView == "DistributionLine") ? "table" : "none";
 	var transmissionDisplay = (siteView == "TransmissionLine") ? "table" : "none";
 	
@@ -1394,6 +1397,7 @@ function populateSiteViewerContent(id, selectId) {
 	clearSiteViewerPanel();
 	
 	if (id != '') {
+		
 		selectId = (selectId >= 0) ? selectId : 0;
 	
 		dojo.style(viewId + "ViewerRecordsTable", "backgroundImage", "url(" + (window.location.origin + window.location.pathname) + "/images/image-loader.gif)");
@@ -1412,6 +1416,10 @@ function populateSiteViewerContent(id, selectId) {
 		dojo.query('.legend.distribution-' + authUserOrgKey).style('display', distributionDisplay);
 		dojo.query('.legend.transmission-default').style('display', transmissionDisplay);
 		
+		dojo.style("map-legend", {
+			left: dojo.style("map", "width")/2 - dojo.style("map-legend", "width")/2 + "px"
+		});
+		
 		var player = videojs('inspection-video-player');
 		var videos = siteData[siteId].workOrders[workOrderNumber].summary.inspectionFlightVideos;
 		if (videos.length > 0) {
@@ -1423,56 +1431,6 @@ function populateSiteViewerContent(id, selectId) {
 		}
 	}
 }
-
-/* 
-function processSiteData(features, assets, selectId){
-	
-	if (siteSelectMethod == 'dialog') {
-		var extent = getQueryResultsExtent(features);
-		map.setExtent(extent.expand(1.5),true);
-	}
-    windFeatureLayer.show();
-    
-	var summaryCriticality = summarizeCriticality();
-	var sum = _.reduce(_.values(summaryCriticality), function(memo, num){ return memo + num; }, 0);
-	
-	//dojo.byId("distribution_inspections_total").innerHTML = features.length;
-	
-	
-	populatePoleRecordTable(features, selectId);
-    resizeViewerPanel("siteViewer");
-	
-	var data = siteData[siteId].workOrders[workOrderNumber].summary.store;
-    var item = data.items[selectId];
-	var uniqueId = item['uniqueId'];
-	var fplid = item['Pole ID'];
-	var criticality = item['criticality'];
-    turbineId = uniqueId;
-    turbineName = fplid;
-    
-	var turbine = dojo.filter(features, function(feature) { return feature.attributes['poleId'] == fplid; })[0];
-    setSymbologyForFeature(turbine, true);
-    
-    //select record in the site viewer table (use interval to allow grid to fully load)	
-    var checkGrid = setInterval(function(){
-		var grid = dijit.byId("siteViewerGrid");
-        if (grid) {
-            clearInterval(checkGrid);
-            setSelectedRowInSiteViewerTable(turbineId);
-			
-			var item = grid.getItem(selectId);
-			var obj = {
-				id: turbineId,
-				name: fplid,
-				criticality: criticality
-			}
-			getAndSetBladeViewerAsset(obj);
-        }
-    }, 100);
-	
-	siteSelectMethod = 'dialog';
-	
-} */
 
 function processSiteData(features, assets, selectId){
 	
@@ -1486,7 +1444,6 @@ function processSiteData(features, assets, selectId){
 	var data = siteData[siteId].workOrders[workOrderNumber].summary.store;
 	var item = data.items[selectId];
 	var uniqueId = item['uniqueId'];
-	var assetId = item[idField];
 	var criticality = item['criticality'];
     turbineId = uniqueId;
     turbineName = assetId;
@@ -1525,6 +1482,7 @@ function processSiteData(features, assets, selectId){
 		transmissionFilterSelect.set('value', '');
 	}
     
+	var assetId = item[idField];
 	var turbine = dojo.filter(features, function(feature) { return feature.attributes['poleId'] == assetId; })[0];
 	if (!_.isUndefined(turbine)) {
 		setSymbologyForFeature(turbine, true);
@@ -1545,11 +1503,12 @@ function processSiteData(features, assets, selectId){
 				criticality: criticality
 			}
 			getAndSetBladeViewerAsset(obj);
+			
+			dojo.style("mapProgressBar", { "display":"none" });
         }
     }, 100);
 	
 	siteSelectMethod = 'dialog';
-	
 }
 
 function summarizeCriticality() {
@@ -1589,6 +1548,8 @@ function switchViews(view) {
 	dojo.style(dojo.byId("siteViewerOuterContent"), "display", feederDisplay);
 	dojo.style(dojo.byId("transmissionViewerOuterContent"), "display", transmissionDisplay);
 	
+	setSiteViewerContent(0);
+	
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	dojo.removeClass(dojo.byId("siteViewer"), "distribution transmission");
 	dojo.byId("site-viewer-title").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "feeder" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "circuit" : "line";
@@ -1604,9 +1565,9 @@ function switchViews(view) {
 	dojo.addClass(dojo.byId(viewId + "SelectorList"), "activeView");
 	renderWindSiteSelector();
 	
-	dojo.byId("site-name-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
+	dojo.byId("asset-site-name-header").innerHTML = (viewId == "distribution" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "distribution" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
 	var width = (viewId == "distribution") ? "65px" : "50px";
-	dojo.query("#site-name-header").style("width", width);
+	dojo.query("#asset-site-name-header").style("width", width);
 	
 	var width = (viewId == "distribution") ? "200px" : "215px";
 	dojo.query("#siteId").style("width", width);
@@ -1631,8 +1592,6 @@ function switchViews(view) {
 	dojo.style(dojo.byId(viewId + "InspectorPanel"), "display", display);
 	
 	inspectionLineVideo.set("title", viewId + " line inspection video");
-	
-	setSiteViewerContent(0);
 	
 	dojo.byId("analyst-button").click();
 }
@@ -1767,33 +1726,6 @@ function populateBladeViewerContent(feature, open) {
 	}
 	
 	if (viewId == "transmission") {
-		/* 
-		var summaryObject = siteData[siteId].workOrders[workOrderNumber].summary.objects.structureInspectionSummary[name];
-		var value = siteName;
-		var tr = dojo.create("tr",{"className":"odd"}, table);
-		dojo.create("td",{"innerHTML": "Line ID", "className":"label"}, tr);
-		dojo.create("td",{"innerHTML": value, "className":"value"}, tr);
-		
-		var value = attributes["dateOfInspection"];
-		var tr = dojo.create("tr",{"className":"even"}, table);
-		dojo.create("td",{"innerHTML": "Inspection Date", "className":"label"}, tr);
-		dojo.create("td",{"innerHTML": value, "className":"value"}, tr);
-		/* 
-		var value = name;
-		var tr = dojo.create("tr",{"className":"odd"}, table);
-		dojo.create("td",{"innerHTML": "Structure Number", "className":"label"}, tr);
-		dojo.create("td",{"innerHTML": value, "className":"value"}, tr);
-		
-		var value = dojo.number.format(attributes["location.longitude"], { places:8 });
-		var tr = dojo.create("tr",{"className":"even"}, table);
-		dojo.create("td",{"innerHTML": "Longitude", "className":"label"}, tr);
-		dojo.create("td",{"innerHTML": value, "className":"value"}, tr);
-		
-		var value = dojo.number.format(attributes["location.latitude"], { places:8 });
-		var tr = dojo.create("tr",{"className":"odd"}, table);
-		dojo.create("td",{"innerHTML": "Latitude", "className":"label"}, tr);
-		dojo.create("td",{"innerHTML": value, "className":"value"}, tr);
-		 */
 		dojo.byId("inspectionDateRow").innerHTML = attributes["dateOfInspection"];
 		getTransmissionInspectionEvents(siteId, workOrderNumber, turbineId);
 	}
@@ -1984,33 +1916,37 @@ function updateSiteViewerControls() {
 
 function updateBladeViewerControls() {
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
+	dojo.query("#bladeInspectionReportButtonDiv .downloadButton").addClass("disabled");
 	
 	if (viewId == "distribution" && !_.isUndefined(turbineName)) {
-		dojo.query("#bladeInspectionReportButtonDiv .downloadButton").addClass("disabled");
 		
-		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].designReportURL;
-		if (!_.isNull(url)) {
-			dojo.removeClass(dojo.byId("bladeInspectionReportDownload"), "disabled");
-		}
+		if(!_.isEmpty(siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary)) {
+			
+			var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].designReportURL;
+			if (!_.isNull(url)) {
+				dojo.removeClass(dojo.byId("bladeInspectionReportDownload"), "disabled");
+			}
 
-		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisReportURL;
-		if (!_.isNull(url)) {
-			dojo.removeClass(dojo.byId("bladeInspectionForemanDownload"), "disabled");
-		}
+			var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisReportURL;
+			if (!_.isNull(url)) {
+				dojo.removeClass(dojo.byId("bladeInspectionForemanDownload"), "disabled");
+			}
 
-		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisResultURL;
-		if (!_.isNull(url)) {
-			dojo.removeClass(dojo.byId("bladeInspectionXmlDownload"), "disabled");
-		}
+			var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].analysisResultURL;
+			if (!_.isNull(url)) {
+				dojo.removeClass(dojo.byId("bladeInspectionXmlDownload"), "disabled");
+			}
 
-		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].anomalyReportDownloadURL;
-		if (!_.isNull(url)) {
-			dojo.removeClass(dojo.byId("bladeInspectionAnomalyDownload"), "disabled");
-		}
+			var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].anomalyReportDownloadURL;
+			if (!_.isNull(url)) {
+				dojo.removeClass(dojo.byId("bladeInspectionAnomalyDownload"), "disabled");
+			}
 
-		var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].droneSurveySheetURL;
-		if (!_.isNull(url)) {
-			dojo.removeClass(dojo.byId("bladeInspectionDroneSurveyDownload"), "disabled");
+			var url = siteData[siteId].workOrders[workOrderNumber].summary.objects.poleInspectionSummary[turbineName].droneSurveySheetURL;
+			if (!_.isNull(url)) {
+				dojo.removeClass(dojo.byId("bladeInspectionDroneSurveyDownload"), "disabled");
+			}
+		
 		}
 	}
 }
@@ -2281,14 +2217,6 @@ function getMapCentroid() {
 
 function populatePoleRecordTable(features, selectId){
 	
-    /* var gridFields = [
-        {"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-		{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false },
-        {"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false },
-		{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false },
-		{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false }
-    ]; */
-	
 	var authUserFields = gridFields["DistributionLine"][authUserOrgKey];
     
 	var fields = {}
@@ -2328,7 +2256,20 @@ function populatePoleRecordTable(features, selectId){
 		}
 	}
 	
-	if (dijit.byId("siteViewerGrid") == undefined) {
+	var updateFields = dojo.map(authUserFields, function(column) { return column.alias; });
+	updateFields.push("uniqueId");
+	updateFields = updateFields.sort();
+	
+	var currentFields = (_.isUndefined(dijit.byId("siteViewerGrid"))) ? ["uniqueId"] : dojo.map(dijit.byId("siteViewerGrid").structure, function(column) { return column.field; }).sort();
+	
+	if(_.isEmpty(_.difference(currentFields, updateFields)) && _.isEmpty(_.difference(updateFields, currentFields))) {
+		dijit.byId("siteViewerGrid").setStore(store);
+		dijit.byId("siteViewerGrid").render();
+	} else {
+		if (!_.isUndefined(dijit.byId("siteViewerGrid"))) {
+			dijit.byId("siteViewerGrid").destroy();
+		}
+		
 		var columns = [];
 		dojo.forEach(authUserFields, function(field){
 			var header = {};
@@ -2358,8 +2299,8 @@ function populatePoleRecordTable(features, selectId){
 			columns.push(header);
 		});
 		var uuid = {
-				'name': ' ',
 				'field':'uniqueId',
+				'name': ' ',
 				'width':2, 
 				'hidden': true,
 				'noresize':true,
@@ -2425,9 +2366,7 @@ function populatePoleRecordTable(features, selectId){
 		});
 		
 		resizeViewerPanel("siteViewer");
-	} else {
-		dijit.byId("siteViewerGrid").setStore(store);
-		dijit.byId("siteViewerGrid").render();
+		
 	}
 	
 	var height = dojo.getComputedStyle(dojo.byId('siteViewerGrid')).height;
@@ -2439,13 +2378,7 @@ function populatePoleRecordTable(features, selectId){
 
 function populateStructureRecordTable(features, selectId){
 	
-    /* var gridFields = [
-        {"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-		{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false },
-        {"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false }
-    ]; */
-	
-	var authUserFields = gridFields["TransmissionLine"];
+    var authUserFields = gridFields["TransmissionLine"];
     
 	var fields = {}
 	dojo.forEach(authUserFields, function (field) {
@@ -2568,7 +2501,10 @@ function populateStructureRecordTable(features, selectId){
 
 function createGridDataStore(id, workOrder, data, type) {
 	
-	var authUserFields = (type == "DistributionLine") ? gridFields[type][authUserOrgKey] : gridFields[type];
+	var orgKey = siteOrgs[siteData[id].organizationId].key;
+	orgKey = (orgKey != "Duke") ? "default" : orgKey;
+	
+	var authUserFields = (type == "DistributionLine") ? gridFields[type][orgKey] : gridFields[type];
     
 	var fields = {}
 	dojo.forEach(authUserFields, function (field) {
@@ -2584,13 +2520,13 @@ function createGridDataStore(id, workOrder, data, type) {
 			item[fields['poleId']] = asset.utilityId;
 			item[fields['dateOfAnalysis']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dateOfAnalysis)) ? convertDate(asset.assetInspection.dateOfAnalysis, "viewer") : " -- ";
 			
-			if (authUserOrgKey == "default") {
+			if (orgKey == "default") {
 				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.criticality)) ? asset.assetInspection.criticality : "NA";
 				item[fields['horizontalLoadingPercent']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.horizontalLoadingPercent)) ? asset.assetInspection.horizontalLoadingPercent : " -- ";
 				item[fields['dataMergedDate']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.dataMergedDate)) ? convertDate(asset.assetInspection.dataMergedDate, "viewer") : " -- ";
 			}
 			
-			if (authUserOrgKey == "Duke") {
+			if (orgKey == "Duke") {
 				item[fields['criticality']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "NA";
 				item[fields['status']] = (!_.isEmpty(asset.assetInspection) && !_.isNull(asset.assetInspection.status)) ? asset.assetInspection.status : "Pending";
 			}
@@ -2638,8 +2574,6 @@ function getAndSetBladeViewerAsset(item, open) {
 	var ids = dojo.map(features, function(feature){ return feature.attributes['uniqueId'] });
 	var index = dojo.indexOf(ids, id);
 	var graphic = features[index];
-	
-	console.log(item.criticality);
 
 	if (item.criticality != "0") {
 		populateBladeViewerContent(graphic, open);
@@ -2751,9 +2685,6 @@ function filterSiteViewerRecords(value){
 function clearFilterSiteViewerUI() {
 	dojo.query(".class-legend-symbol").attr("data-filter", "");
 	dojo.query(".class-legend-close").style("display", "none");
-	
-	//var data = dojo.clone(siteData[siteId].workOrders[workOrderNumber].summary.store);
-	//dojo.byId("distribution_inspections_total").innerHTML = data.items.length;
 }
 
 function clearFilterSiteViewerRecords(){
@@ -2906,64 +2837,6 @@ function hoverSiteSelector(node, state) {
     }
 }
 
-function applyCssSkin(org) {
-    authUserSkin = (_.has(skinTemplate, org)) ? skinTemplate[org] : skinTemplate["default"];
-	
-	var windamsLogoVisible = (org == "InspecToolsLLC") ? "visible" : " hidden";
-	dojo.style("headerLeftDiv", "visibility", windamsLogoVisible);
-    
-    dojo.style('sign-in', {
-        'backgroundColor': authUserSkin.css['sign-in'].background,
-        'color': authUserSkin.css['sign-in'].color,
-        'right': authUserSkin.css['sign-in'].right
-    });
-    
-    dojo.style('current-user', {
-        'right': authUserSkin.css['current-user'].right
-    });
-    
-    dojo.style('loginDiv', {
-        'right': authUserSkin.css['loginDiv'].right
-    });
-    
-    dojo.style('headerRightDiv', {
-        'display':authUserSkin.css['headerRightDiv'].display,
-        'backgroundImage': authUserSkin.logo,
-        'width': authUserSkin.css['headerRightDiv'].width
-    });
-
-    dojo.connect(dojo.byId("headerRightDiv"), "onclick", function(){ 
-        window.open(authUserSkin.url);
-    });
-    
-    dojo.connect(dojo.byId('headerRightDiv'), 'onmouseover', function() {
-        dojo.style(this, 'backgroundColor', authUserSkin.css['headerRightDiv'].mouseOverBackground);
-    });
-    
-    dojo.connect(dojo.byId('headerRightDiv'), 'onmouseout', function() {
-        dojo.style(this, 'backgroundColor', authUserSkin.css['headerRightDiv'].background);
-    });
-    
-    dojo.disconnect(eventHandles['sign-in']['onclick']);
-    eventHandles['sign-in']['onclick'] = dojo.connect(dojo.byId('sign-in'), 'onclick', function() {
-		signInOnClick();
-	});
-	
-    dojo.disconnect(eventHandles['sign-in']['onmouseover']);
-	eventHandles['sign-in']['onmouseover'] = dojo.connect(dojo.byId('sign-in'), 'onmouseover', function() {
-		dojo.style(this, 'backgroundColor', authUserSkin.css['sign-in'].mouseOverBackground);
-		dojo.style(this, 'color', authUserSkin.css['sign-in'].mouseOverColor);
-	});
-	
-    dojo.disconnect(eventHandles['sign-in']['onmouseout']);
-	eventHandles['sign-in']['onmouseout'] = dojo.connect(dojo.byId('sign-in'), 'onmouseout', function() {
-		if (dojo.style('loginDiv', 'display') == 'none') {
-			dojo.style(this, 'backgroundColor', authUserSkin.css['sign-in'].background);
-			dojo.style(this, 'color', authUserSkin.css['sign-in'].color);
-		}
-	}); 
-}
-
 function initializeJqScrollPane() {
     var params = {
         verticalDragMinHeight: 48,
@@ -2982,21 +2855,6 @@ function initializeJqScrollPane() {
         verticalDragMaxHeight: 24,
         animateScroll: true
     });
-}
-
-function setBladeViewerContent() {
-    var names = dojo.map(features, function(feature){ return feature.attributes['TURBINE_ID'] });
-			
-    turbineInspectionDate = item["Inspection Date"];
-    
-    var index = dojo.indexOf(names, name);
-    if (item["Inspection Date"] != " -- ") {
-        populateBladeViewerContent(features[index], true);
-    } else {
-        resetBladeViewerPanel();
-        clearHighlightSymbol();
-        setSymbologyForFeature(features[index], true);
-    }
 }
 
 function createBugReportForm() {
@@ -3243,4 +3101,28 @@ function createAboutDialog() {
 function openAboutDialog(){
     about.show();
     menuDropdown.hide();
+}
+
+
+function updateUIbySiteOrg(id, viewId) {
+	var orgKey = siteOrgs[siteData[id].organizationId].key;
+	authUserOrgKey = (orgKey == "Duke") ? orgKey : "default";
+	
+	dojo.query("table[class*='distribution-'").style("display","none");
+	dojo.query(".distribution-" + authUserOrgKey).style("display","table");
+	
+	dojo.byId("site-viewer-title").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "feeder" : (viewId == "site" && authUserOrgKey == "Duke") ? "circuit" : "line";
+	
+	dojo.byId("site-name-header").innerHTML = (authUserOrgKey == "default") ? "Feeder:" : "Circuit:";
+	
+	dojo.byId("asset-site-name-header").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "Feeder:" : (viewId == "site" && authUserOrgKey == "Duke") ? "Circuit:": "Line:";
+	var width = (viewId == "distribution") ? "65px" : "50px";
+	dojo.query("#asset-site-name-header").style("width", width);
+	
+	dojo.byId("pole-criticality-header").innerHTML = (viewId == "site" && authUserOrgKey == "default") ? "Horizontal Pole Loading (%):" : (viewId == "site" && authUserOrgKey == "Duke") ? "Pole Status:": "Damage Assessment:";
+	var width = (viewId == "site" && authUserOrgKey == "default") ? "200px" : (viewId == "site" && authUserOrgKey == "Duke") ? "90px" : "165px";
+	dojo.query("#pole-criticality-header").style("width", width);
+	
+	var display = (authUserOrgKey != "Duke") ? "block" : "none";
+	dojo.query("#dataMergedContent").style("display", display);
 }
