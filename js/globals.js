@@ -92,20 +92,10 @@ var siteId;
 var siteView = "DistributionLine";
 var turbineId;
 var turbineName;
-var turbineInspectionDate;
 var workOrderNumber;
 var lasDataAvailable = null;
 
-var inspectionStatus = {
-	"InspectionInProcess":[],
-	"InspectionApproved":[],
-	"InspectionSubmitted":[],
-	"InspectionCompleted":[]
-	
-};
-
 var siteSelectMethod = 'dialog';
-var clearFilter = false;
 var poleFilterSelect;
 var transmissionFilterSelect;
 
@@ -124,17 +114,13 @@ var severityColors = {
 	"2": "#FFD34E",
 	"3": "#F16722",
 	"4": "#FB0058",
-	"5": "#FB0058"
-};
-
-var dukeSeverityColors = {
-	"NA": "#444444",
+	"5": "#FB0058",
 	"Pending": "#444444",
 	"Processed": "#FFD34E",
 	"PendingMerge": "#F16722",
 	"Complete": "#589D6D",
 	"Critical": "#FB0058"
-}
+};
 
 var transmissionSeverityColors = {
     "NA": "#444444",
@@ -170,10 +156,9 @@ var reportTypeOptions = [
 ];
 
 var elementTypeOptions = [
-    { label: "Asset Viewer", value: "Asset Viewer"  },
-    { label: "Asset Inspector", value: "Asset Inspector" },
-    { label: "Asset Images", value: "Asset Images"  },
-    { label: "Site Viewer", value: "Site Viewer" },
+    { label: "Pole or Structure Viewer", value: "Pole or Structure Viewer" },
+    { label: "Images", value: "Images"  },
+    { label: "Feeder or Line Viewer", value: "Feeder or Line Viewer" },
     { label: "Reports", value: "Report" },
     { label: "Map", value: "Map" },
     { label: "Other", value: "Other" }
@@ -191,6 +176,8 @@ var priorityTypeOptions = [
 	{ label: "Critical", value: "Critical" }
 ];
 
+var customSites = ["Duke"];
+
 var criticalClasses = {
 	"distribution": {
 		"default": {
@@ -206,34 +193,79 @@ var criticalClasses = {
 			"Critical":0
 		}
 	},
-	"transmission":{
-		"1":0,
-		"2":0,
-		"3":0
+	"transmission": {
+		"default": {
+			"1":0,
+			"2":0,
+			"3":0
+		}
+	}
+}
+
+var criticalProperty = {
+	"distribution": {
+		"default": "criticality",
+		"Duke": "status"
+	},
+	"transmission": {
+		"default": "severity"
+	}
+}
+
+var uiConfig = {
+	"DistributionLine": {
+		"default": {
+			"site-viewer-title" : "feeder",
+			"site-name-header": "Feeder:",
+			"site-name-width": "65px",
+			"pole-criticality-header": "Horizontal Pole Loading (%):",
+			"pole-criticality-width": "200px",
+			"pole-criticality-field": "horizontalLoadingPercent"
+		},
+		"Duke": {
+			"site-viewer-title" : "circuit",
+			"site-name-header": "Circuit:",
+			"site-name-width": "65px",
+			"pole-criticality-header": "Pole Status:",
+			"pole-criticality-width": "90px",
+			"pole-criticality-field": null
+		}
+	},
+	"TransmissionLine": {
+		"default":  {
+			"site-viewer-title" : "line",
+			"site-name-header": "Line:",
+			"site-name-width": "50px",
+			"pole-criticality-header": "Damage Assessment:",
+			"pole-criticality-width": "165px",
+			"pole-criticality-field": null
+		}
 	}
 }
 
 var gridFields = {
 	"DistributionLine": {
 		"default": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-			{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false },
-			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false },
-			{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false },
-			{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false }
+			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"criticality", "dataType":"string" },
+			{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false, "property":"utilityId", "dataType":"uid" },
+			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
+			{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false, "nullValue":" -- ", "property":"horizontalLoadingPercent", "dataType":"string" },
+			{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dataMergedDate", "dataType":"data" }
 		],
 		"Duke": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-			{"name":"poleId", "alias":"Pole ID", "width":"150px", "hidden": false },
-			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"160px", "hidden": false },
-			{"name":"status", "alias":"Status", "width":"160px", "hidden": false }
+			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"status", "dataType":"string" },
+			{"name":"poleId", "alias":"Pole ID", "width":"150px", "hidden": false, "property":"utilityId", "dataType":"uid" },
+			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"160px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
+			{"name":"status", "alias":"Status", "width":"160px", "hidden": false, "nullValue":"Pending", "property":"status", "dataType":"string" }
 		]
 	},
-	"TransmissionLine": [
-		{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false },
-		{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false },
-        {"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false }
-	]
+	"TransmissionLine": {
+		"default": [
+			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"severity", "dataType":"string" },
+			{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false, "property":"structureNumber", "dataType":"uid" },
+			{"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false, "nullValue":" -- ", "property":"dateOfInspection", "dataType":"date" }
+		]
+	}
 };
 
 var assetJsonResponse = [];
