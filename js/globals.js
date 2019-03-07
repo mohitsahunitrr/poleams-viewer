@@ -99,46 +99,16 @@ var siteSelectMethod = 'dialog';
 var poleFilterSelect;
 var transmissionFilterSelect;
 
+var assetJsonResponse = [];
+var Potree;
+var viewer;
+var material;
+
 var firstImageLoad = true;
 var zoomifyOver = false;
 var zoomifyHotspotCurrent = null;
 var zoomifyFullScreenMode = false;
 var shapeMode = 'rectangle';
-
-var severityColors = {
-	"-9999": "#444444",
-	"-1": "#444444",
-    "NA": "#444444",
-	"0": "#444444",
-	"1": "#6DAFBA",
-	"2": "#FFD34E",
-	"3": "#F16722",
-	"4": "#FB0058",
-	"5": "#FB0058",
-	"Pending": "#444444",
-	"Processed": "#FFD34E",
-	"PendingMerge": "#F16722",
-	"Complete": "#589D6D",
-	"Critical": "#FB0058"
-};
-
-var transmissionSeverityColors = {
-    "NA": "#444444",
-	"0": "#F7B409",
-	"1": "#6DAFBA",
-	"2": "#F16722",
-	"3": "#7D1940",
-}
-
-var hotSpotColors = transmissionSeverityColors;
-
-var transmissionSeverityLabels = {
-    "NA": "NA",
-	"0": "NA",
-	"1": "None",
-	"2": "Minor",
-	"3": "Critical",
-}
 
 var legendMessages = {
 	"severity0":"No issue",
@@ -176,99 +146,122 @@ var priorityTypeOptions = [
 	{ label: "Critical", value: "Critical" }
 ];
 
+
 var customSites = ["Duke"];
-
-var criticalClasses = {
-	"distribution": {
-		"default": {
-			"1":0,
-			"2":0,
-			"3":0,
-			"4":0
-		},
-		"Duke": {
-			"Processed":0,
-			"PendingMerge":0,
-			"Complete":0,
-			"Critical":0
-		}
-	},
-	"transmission": {
-		"default": {
-			"1":0,
-			"2":0,
-			"3":0
-		}
-	}
-}
-
-var criticalProperty = {
-	"distribution": {
-		"default": "criticality",
-		"Duke": "status"
-	},
-	"transmission": {
-		"default": "severity"
-	}
-}
-
-var uiConfig = {
+var appConfig = {
 	"DistributionLine": {
 		"default": {
-			"site-viewer-title" : "feeder",
-			"site-name-header": "Feeder:",
-			"site-name-width": "65px",
-			"pole-criticality-header": "Horizontal Pole Loading (%):",
-			"pole-criticality-width": "200px",
-			"pole-criticality-field": "horizontalLoadingPercent"
+			"ui": {
+				"site-viewer-title" : "feeder",
+				"site-name-header": "Feeder:",
+				"site-name-width": "65px",
+				"pole-criticality-header": "Horizontal Pole Loading (%):",
+				"pole-criticality-width": "200px",
+				"pole-criticality-field": "horizontalLoadingPercent"
+			 },
+			 "fields": [
+				{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"criticality", "dataType":"string" },
+				{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false, "property":"utilityId", "dataType":"uid" },
+				{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
+				{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false, "nullValue":" -- ", "property":"horizontalLoadingPercent", "dataType":"string" },
+				{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dataMergedDate", "dataType":"data" }
+			],
+			"property": {
+				"criticality": "criticality"
+			},
+			"summaryClass": {
+				"1":0,
+				"2":0,
+				"3":0,
+				"4":0
+			},
+			"colors": {
+				"NA": "#444444",
+				"0": "#444444",
+				"1": "#6DAFBA",
+				"2": "#FFD34E",
+				"3": "#F16722",
+				"4": "#FB0058",
+				"5": "#FB0058"
+			},
+			"sliderLabels": {
+
+			}
 		},
 		"Duke": {
-			"site-viewer-title" : "circuit",
-			"site-name-header": "Circuit:",
-			"site-name-width": "65px",
-			"pole-criticality-header": "Pole Status:",
-			"pole-criticality-width": "90px",
-			"pole-criticality-field": null
+			"ui": {
+				"site-viewer-title" : "circuit",
+				"site-name-header": "Circuit:",
+				"site-name-width": "65px",
+				"pole-criticality-header": "Pole Status:",
+				"pole-criticality-width": "90px",
+				"pole-criticality-field": null
+			},
+			"fields": [
+				{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"status", "dataType":"string" },
+				{"name":"poleId", "alias":"Pole ID", "width":"150px", "hidden": false, "property":"utilityId", "dataType":"uid" },
+				{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"160px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
+				{"name":"status", "alias":"Status", "width":"160px", "hidden": false, "nullValue":"Pending", "property":"status", "dataType":"string" }
+			],
+			"property": {
+				"criticality": "status"
+			},
+			"summaryClass": {
+				"Processed":0,
+				"PendingMerge":0,
+				"Complete":0,
+				"Critical":0
+			},
+			"colors": {
+				"NA": "#444444",
+				"Pending": "#444444",
+				"Processed": "#FFD34E",
+				"PendingMerge": "#F16722",
+				"Complete": "#589D6D",
+				"Critical": "#FB0058"
+			},
+			"sliderLabels": {
+
+			}
 		}
 	},
 	"TransmissionLine": {
 		"default":  {
-			"site-viewer-title" : "line",
-			"site-name-header": "Line:",
-			"site-name-width": "50px",
-			"pole-criticality-header": "Damage Assessment:",
-			"pole-criticality-width": "165px",
-			"pole-criticality-field": null
+			"ui": {
+				"site-viewer-title" : "line",
+				"site-name-header": "Line:",
+				"site-name-width": "50px",
+				"pole-criticality-header": "Damage Assessment:",
+				"pole-criticality-width": "155px",
+				"pole-criticality-field": null
+			},
+			"fields": [
+				{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"severity", "dataType":"string" },
+				{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false, "property":"structureNumber", "dataType":"uid" },
+				{"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false, "nullValue":" -- ", "property":"dateOfInspection", "dataType":"date" }
+			],
+			"property": {
+				"criticality": "severity"
+			},
+			"summaryClass": {
+				"1":0,
+				"2":0,
+				"3":0
+			},
+			"colors": {
+				"NA": "#444444",
+				"0": "#F7B409",
+				"1": "#6DAFBA",
+				"2": "#F16722",
+				"3": "#7D1940"
+			},
+			"sliderLabels": {
+				"NA": "NA",
+				"0": "NA",
+				"1": "None",
+				"2": "Minor",
+				"3": "Critical"
+			}
 		}
 	}
 }
-
-var gridFields = {
-	"DistributionLine": {
-		"default": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"criticality", "dataType":"string" },
-			{"name":"poleId", "alias":"Pole ID", "width":"100px", "hidden": false, "property":"utilityId", "dataType":"uid" },
-			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
-			{"name":"horizontalLoadingPercent", "alias":"Horizontal Pole Loading", "width":"150px", "hidden": false, "nullValue":" -- ", "property":"horizontalLoadingPercent", "dataType":"string" },
-			{"name":"dataMergedDate", "alias":"Design Manager", "width":"105px", "hidden": false, "nullValue":" -- ", "property":"dataMergedDate", "dataType":"data" }
-		],
-		"Duke": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"status", "dataType":"string" },
-			{"name":"poleId", "alias":"Pole ID", "width":"150px", "hidden": false, "property":"utilityId", "dataType":"uid" },
-			{"name":"dateOfAnalysis", "alias":"Analysis Date", "width":"160px", "hidden": false, "nullValue":" -- ", "property":"dateOfAnalysis", "dataType":"date" },
-			{"name":"status", "alias":"Status", "width":"160px", "hidden": false, "nullValue":"Pending", "property":"status", "dataType":"string" }
-		]
-	},
-	"TransmissionLine": {
-		"default": [
-			{"name":"criticality", "alias":"criticality", "width":"24px", "hidden": false, "nullValue":"NA", "property":"severity", "dataType":"string" },
-			{"name":"poleId", "alias":"Structure Number", "width":"241px", "hidden": false, "property":"structureNumber", "dataType":"uid" },
-			{"name":"dateOfInspection", "alias":"Inspection Date", "width":"235px", "hidden": false, "nullValue":" -- ", "property":"dateOfInspection", "dataType":"date" }
-		]
-	}
-};
-
-var assetJsonResponse = [];
-var Potree;
-var viewer;
-var material;

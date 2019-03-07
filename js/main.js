@@ -663,13 +663,15 @@ function loadMainApp(){
     
     //apply relevant colors to map legend symbols
     dojo.forEach(["1","2","3","4"], function(level) {
-        dojo.style("distribution-legend-" + level, "backgroundColor", severityColors[level]);
-		dojo.style("distribution-class-legend-" + level, "backgroundColor", severityColors[level]);
+		var colors = appConfig["DistributionLine"]["default"].colors;
+        dojo.style("distribution-legend-" + level, "backgroundColor", colors[level]);
+		dojo.style("distribution-class-legend-" + level, "backgroundColor", colors[level]);
     });
 	
 	dojo.forEach(["1","2","3"], function(level) {
-        dojo.style("transmission-legend-" + level, "backgroundColor", transmissionSeverityColors[level]);
-		dojo.style("transmission-class-legend-" + level, "backgroundColor", transmissionSeverityColors[level]);
+        var colors = appConfig["TransmissionLine"]["default"].colors;
+		dojo.style("transmission-legend-" + level, "backgroundColor", colors[level]);
+		dojo.style("transmission-class-legend-" + level, "backgroundColor", colors[level]);
     });
 	
 	dojo.forEach(dojo.query(".class-legend-symbol"), function(node) {
@@ -842,8 +844,9 @@ function loadMainApp(){
 	
 	//added specifically for Duke Energy	
 	dojo.forEach(["Processed","PendingMerge","Complete","Critical"], function(level) {
-		dojo.style("distribution-legend-" + level, "backgroundColor", severityColors[level]);
-		dojo.style("distribution-class-legend-" + level, "backgroundColor", severityColors[level]);
+		var colors = appConfig["DistributionLine"]["Duke"].colors;
+		dojo.style("distribution-legend-" + level, "backgroundColor", colors[level]);
+		dojo.style("distribution-class-legend-" + level, "backgroundColor", colors[level]);
 	});
 
 }
@@ -1021,8 +1024,7 @@ function loadMapLayers() {
 	  };
 	  var orgKey = (_.contains(customSites, siteOrgs[asset.organizationId].key)) ? siteOrgs[asset.organizationId].key : "default";
 	  attributes.organizationKey = orgKey;
-	  var type = (asset.assetType == "DistributionLine") ? "distribution" : "transmission";
-	  var criticalityField = criticalProperty[type][orgKey];
+	  var criticalityField = appConfig[asset.assetType][orgKey].property.criticality;
 	  attributes.criticality = (_.isEmpty(asset.assetInspection) || _.isNull(asset.assetInspection[criticalityField]) || !_.has(asset.assetInspection, criticalityField)) ? "NA" : asset.assetInspection[criticalityField];
 	  
 	  graphic.setGeometry(geometry); 
@@ -1517,14 +1519,15 @@ function summarizeCriticality() {
 	var viewId = (siteView == "DistributionLine") ? "distribution" : "transmission";
 	var assets = (viewId == "distribution") ? "poleSummary" : "structureSummary";
 	var assetInspections = (viewId == "distribution") ? "poleInspectionSummary" : "structureInspectionSummary";
-	var property = criticalProperty[viewId][authUserOrgKey];
+	var property = appConfig[siteView][authUserOrgKey].property.criticality;
 	
 	var data = siteData[siteId].workOrders[workOrderNumber].summary.data;
 	var structures = siteData[siteId].workOrders[workOrderNumber].summary.objects[assets];
 	var inspections = siteData[siteId].workOrders[workOrderNumber].summary.objects[assetInspections];
 	var total = _.keys(data).length;
 	
-	var criticalClass = dojo.clone(criticalClasses[viewId][authUserOrgKey]);
+	var criticalClass = dojo.clone(appConfig[siteView][authUserOrgKey].summaryClass);
+	
 	
 	var maxClass = _.max(_.keys(criticalClass));
 	dojo.forEach(data, function(i) {
@@ -1610,9 +1613,10 @@ function populateBladeViewerContent(feature, open) {
 	dojo.byId("turbineId").innerHTML = name;
 	dojo.byId("turbineLocation").innerHTML = x + " , " + y;
 	
-	var crticalValue = (_.isNull(uiConfig[siteView][authUserOrgKey]["pole-criticality-field"])) ? "" : attributes[uiConfig[siteView][authUserOrgKey]["pole-criticality-field"]]
-	dojo.byId("pole-criticality").innerHTML = crticalValue;
-	var backgroundColor = (viewId == "distribution") ? severityColors[criticality] : transmissionSeverityColors[criticality];
+	var criticalValue = (_.isNull(appConfig[siteView][authUserOrgKey].ui["pole-criticality-field"])) ? "" : attributes[appConfig[siteView][authUserOrgKey].ui["pole-criticality-field"]]
+	dojo.byId("pole-criticality").innerHTML = criticalValue;
+	
+	var backgroundColor = appConfig[siteView][authUserOrgKey].colors[criticality];
 	dojo.style(dojo.byId("pole-criticality"), "backgroundColor", backgroundColor);
 	
 	dojo.attr("siteId", "data-site-id", siteId);
@@ -1806,8 +1810,8 @@ function populateBladeViewerContent(feature, open) {
 		item:1,
 		thumbItem:5,
 		vertical:true,
-		verticalHeight: 373,
-		vThumbWidth: 100,
+		verticalHeight: 375,
+		vThumbWidth: 103,
 		thumbMargin: 2,
 		galleryMargin:0,
 		slideMargin: 0,
@@ -1829,7 +1833,7 @@ function populateBladeViewerContent(feature, open) {
 	if (dojo.query("#image-gallery li").length < 5) {
 		window.setTimeout(function() {
 			dojo.query("#bladeViewerImageGallery .lSSlideOuter").style("height", "375px");
-			dojo.query("#bladeViewerImageGallery .lSGallery").style( { "height": "373px", "background": "#EEEEEE", "border":"1px solid #cccccc" });
+			dojo.query("#bladeViewerImageGallery .lSGallery").style( { "height": "373px", "width":"101px", "background": "#EEEEEE", "border":"1px solid #cccccc" });
 		}, 250);
 	}
 	
@@ -2214,7 +2218,7 @@ function getMapCentroid() {
 
 function populatePoleRecordTable(features, selectId){
 	
-	var authUserFields = gridFields["DistributionLine"][authUserOrgKey];
+	var authUserFields = appConfig["DistributionLine"][authUserOrgKey].fields;
     
 	var fields = {}
 	dojo.forEach(authUserFields, function (field) {
@@ -2282,7 +2286,7 @@ function populatePoleRecordTable(features, selectId){
 				header.formatter = function(val, rowIdx, cell) {
 					var severity = _.first(this.grid.getItem(rowIdx)["criticality"]);
 					var uniqueId = _.first(this.grid.getItem(rowIdx)["uniqueId"]);
-					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + severityColors[severity] + ';">i</div></div>' 
+					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + appConfig[siteView][authUserOrgKey].colors[severity] + ';">i</div></div>' 
 				};
 			}
 			if (header.field == 'Horizontal Pole Loading') {
@@ -2325,7 +2329,7 @@ function populatePoleRecordTable(features, selectId){
 			dojo.byId("workOrder").innerHTML = '';
 			dojo.byId("turbineId").innerHTML = '';
             dojo.byId("turbineLocation").innerHTML = '';
-			dojo.style(dojo.byId("pole-criticality"), "backgroundColor", severityColors["NA"]);
+			dojo.style(dojo.byId("pole-criticality"), "backgroundColor", appConfig[siteView][authUserOrgKey].colors["NA"]);
 			
 			var obj = {
 				id:store.getValue(item, 'uniqueId'),
@@ -2371,7 +2375,7 @@ function populatePoleRecordTable(features, selectId){
 
 function populateStructureRecordTable(features, selectId){
 	
-    var authUserFields = gridFields["TransmissionLine"][authUserOrgKey];
+    var authUserFields = appConfig["TransmissionLine"][authUserOrgKey].fields;
     
 	var fields = {}
 	dojo.forEach(authUserFields, function (field) {
@@ -2410,7 +2414,7 @@ function populateStructureRecordTable(features, selectId){
 				header.formatter = function(val, rowIdx, cell) {
 					var severity = _.first(this.grid.getItem(rowIdx)["criticality"]);
 					var uniqueId = _.first(this.grid.getItem(rowIdx)["uniqueId"]);
-					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + transmissionSeverityColors[severity] + ';">i</div></div>' 
+					return '<div class="blade_viewer_tool"><div id="datagrid-' + uniqueId + '" class="grid_circle blade_viewer_row" style="background:' + appConfig[siteView][authUserOrgKey].colors[severity] + ';">i</div></div>' 
 				};
 			}
 			columns.push(header);
@@ -2448,7 +2452,7 @@ function populateStructureRecordTable(features, selectId){
 			dojo.byId("workOrder").innerHTML = '';
 			dojo.byId("turbineId").innerHTML = '';
             dojo.byId("turbineLocation").innerHTML = '';
-			dojo.style(dojo.byId("pole-criticality"), "backgroundColor", transmissionSeverityColors["NA"]);
+			dojo.style(dojo.byId("pole-criticality"), "backgroundColor", appConfig[siteView][authUserOrgKey].colors["NA"]);
 			
 			var obj = {
 				id:store.getValue(item, 'uniqueId'),
@@ -2495,7 +2499,7 @@ function populateStructureRecordTable(features, selectId){
 function createGridDataStore(id, workOrder, data, type) {
 	
 	var orgKey = (_.contains(customSites, siteOrgs[siteData[id].organizationId].key)) ? siteOrgs[siteData[id].organizationId].key : "default";
-	var authUserFields = gridFields[type][orgKey];
+	var authUserFields = appConfig[type][orgKey].fields;
 	
 	gridItems = [];
 	dojo.forEach(data, function (asset){
@@ -2529,7 +2533,7 @@ function getAndSetBladeViewerAsset(item, open) {
 	dojo.byId("workOrder").innerHTML = '';
 	dojo.byId("turbineId").innerHTML = '';
 	dojo.byId("turbineLocation").innerHTML = '';
-	dojo.style(dojo.byId("pole-criticality"), "backgroundColor", severityColors["NA"]);
+	dojo.style(dojo.byId("pole-criticality"), "backgroundColor", appConfig[siteView][authUserOrgKey].colors["NA"]);
 
 	map.infoWindow.hide();
 	var features = dojo.filter(windFeatureLayer.graphics, function(graphic) { return graphic.attributes['subStationId'] == siteId });
@@ -3077,15 +3081,15 @@ function updateUIbySiteOrg(id, viewId) {
 	dojo.query("table[class*='distribution-'").style("display","none");
 	dojo.query(".distribution-" + authUserOrgKey).style("display","table");
 	
-	dojo.byId("site-viewer-title").innerHTML = uiConfig[viewId][authUserOrgKey]["site-viewer-title"];
-	dojo.byId("site-name-header").innerHTML = uiConfig[viewId][authUserOrgKey]["site-name-header"];
+	dojo.byId("site-viewer-title").innerHTML = appConfig[viewId][authUserOrgKey].ui["site-viewer-title"];
+	dojo.byId("site-name-header").innerHTML = appConfig[viewId][authUserOrgKey].ui["site-name-header"];
 	
-	dojo.byId("asset-site-name-header").innerHTML = uiConfig[viewId][authUserOrgKey]["site-name-header"];
-	var width = uiConfig[viewId][authUserOrgKey]["site-name-width"];
+	dojo.byId("asset-site-name-header").innerHTML = appConfig[viewId][authUserOrgKey].ui["site-name-header"];
+	var width = appConfig[viewId][authUserOrgKey].ui["site-name-width"];
 	dojo.query("#asset-site-name-header").style("width", width);
 	
-	dojo.byId("pole-criticality-header").innerHTML = uiConfig[viewId][authUserOrgKey]["pole-criticality-header"];
-	var width = uiConfig[viewId][authUserOrgKey]["pole-criticality-width"];
+	dojo.byId("pole-criticality-header").innerHTML = appConfig[viewId][authUserOrgKey].ui["pole-criticality-header"];
+	var width = appConfig[viewId][authUserOrgKey].ui["pole-criticality-width"];
 	dojo.query("#pole-criticality-header").style("width", width);
 	
 	var display = (!_.contains(customSites, authUserOrgKey)) ? "block" : "none";

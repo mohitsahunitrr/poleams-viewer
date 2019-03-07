@@ -365,7 +365,7 @@
 						zoomify = (_.isUndefined(zoomify)) ? "NA" : zoomify;
 						
                         if (settings.gallery === true) {
-                            pagers += '<li style="width:100%;' + property + ':' + thumbWidth + 'px;' + gutter + ':' + settings.thumbMargin + 'px" data-image-url="' + img + '" data-image-type="' + imgType + '" data-zoomify-url="' + zoomify + '" data-image-label="' + imgLabel + '" data-image-id="' + imgId + '" data-image-name="' + imgName + '"><a href="#"><img src="' + thumb + '" /></a></li>';
+                            pagers += '<li style="width:100%;' + property + ':' + thumbWidth + 'px;' + gutter + ':' + settings.thumbMargin + 'px" data-image-url="' + img + '" data-image-type="' + imgType + '" data-zoomify-url="' + zoomify + '" data-image-label="' + imgLabel + '" data-image-id="' + imgId + '" data-image-name="' + imgName + '"><a href="#"><img style="width:100%;height:100%;" src="' + thumb + '" /></a></li>';
 						//BN end modification
                         } else {
                             pagers += '<li><a href="#">' + (i + 1) + '</a></li>';
