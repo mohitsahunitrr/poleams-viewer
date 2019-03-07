@@ -201,7 +201,7 @@ function createInspectionDisplay() {
 	var sliderLabels = new dijit.form.HorizontalRuleLabels({
 		container: "topDecoration",
 		labelStyle: "font-size: 14px; font-weight: bolder; top: -20px;",
-		labels: ['<span id="severity1-sliderLabel" class="severity-sliderLabel" style="color:' + transmissionSeverityColors[1] + ';" onclick="setSeveritySliderValue(1)">' + transmissionSeverityLabels[1] + '</span>', '<span id="severity2-sliderLabel" class="severity-sliderLabel" style="color:' + transmissionSeverityColors[2] + ';" onclick="setSeveritySliderValue(2)">' + transmissionSeverityLabels[2] + '</span>', '<span id="severity3-sliderLabel" class="severity-sliderLabel" style="color:' + transmissionSeverityColors[3] + ';" onclick="setSeveritySliderValue(3)">' + transmissionSeverityLabels[3] + '</span>']
+		labels: ['<span id="severity1-sliderLabel" class="severity-sliderLabel" style="color:' + appConfig["TransmissionLine"]["default"].colors[1] + ';" onclick="setSeveritySliderValue(1)">' + appConfig["TransmissionLine"]["default"].sliderLabels[1] + '</span>', '<span id="severity2-sliderLabel" class="severity-sliderLabel" style="color:' + appConfig["TransmissionLine"]["default"].colors[2] + ';" onclick="setSeveritySliderValue(2)">' + appConfig["TransmissionLine"]["default"].sliderLabels[2] + '</span>', '<span id="severity3-sliderLabel" class="severity-sliderLabel" style="color:' + appConfig["TransmissionLine"]["default"].colors[3] + ';" onclick="setSeveritySliderValue(3)">' + appConfig["TransmissionLine"]["default"].sliderLabels[3] + '</span>']
 	}, labelsNode);
 	
 	var severityScoreSlider = new dijit.form.HorizontalSlider({
@@ -246,8 +246,8 @@ function createInspectionDisplay() {
 				}
 				if (hotspots) {
 					dojo.forEach(hotspots, function(hotspot) {
-						Z.Viewport.modifyHotspot(hotspot.id, 'lineColor', hotSpotColors[value]);
-						Z.Viewport.modifyHotspot(hotspot.id, 'fillColor', hotSpotColors[value]);
+						Z.Viewport.modifyHotspot(hotspot.id, 'lineColor', appConfig["TransmissionLine"][authUserOrgKey].colors[value]);
+						Z.Viewport.modifyHotspot(hotspot.id, 'fillColor', appConfig["TransmissionLine"][authUserOrgKey].colors[value]);
 					});
 				}
 				
@@ -948,6 +948,7 @@ function getImageHotspotById(id) {
 }
 
 function makeAnnotationObjects(data){
+	var hotSpotColors = appConfig["TransmissionLine"][authUserOrgKey].colors;
 	var hotspots = dojo.map(data, function(obj){
         var name = obj.name;
         var hotspot = { 
@@ -1455,7 +1456,7 @@ function undoInspectionEventEdits(exit) {
                 return poly.severity;
             });
             var gridNodeSeverity = (severity.length > 0) ? _.max(severity) : 0;
-            rollbackOverviewGridSeverity(imageId, gridNodeSeverity);
+            //rollbackOverviewGridSeverity(imageId, gridNodeSeverity);
         });
         
         var inspectionEvent = dijit.byId('inspectionEventTypeDropdown').get('value');
@@ -1885,7 +1886,7 @@ function updateSiteViewerAndFeatureLayerRecords(){
 			if (index >= 0) {
 				var item = dijit.byId("transmissionViewerGrid").getItem(index);
 				var store = dijit.byId("transmissionViewerGrid").store;
-				var contents = '<div class="blade_viewer_tool"><div class="grid_circle blade_viewer_row" style="background:' + transmissionSeverityColors[criticality] + ';">i</div></div>';
+				var contents = '<div class="blade_viewer_tool"><div class="grid_circle blade_viewer_row" style="background:' + appConfig["TransmissionLine"][authUserOrgKey].colors[criticality] + ';">i</div></div>';
 				
 				// Update store values for fields, if changing table (fields of field names) must change these accordingly
 				store.setValue(item,"criticality", criticality);
@@ -1906,7 +1907,7 @@ function updateSiteViewerAndFeatureLayerRecords(){
 			} */
 						
 			var node = dojo.byId("pole-criticality");
-			dojo.style(node, "backgroundColor",  transmissionSeverityColors[criticality]);
+			dojo.style(node, "backgroundColor",  appConfig["TransmissionLine"][authUserOrgKey].colors[criticality]);
 			
 			summarizeCriticality();
 		},
@@ -1949,6 +1950,7 @@ function updateInspectionEventTypeDropdown(id) {
 }
 
 function createInspectionEventHotspotFromParameters(inId, name, inspectionEventId, imageId, geometry) {
+	var hotSpotColors = appConfig["TransmissionLine"][authUserOrgKey].colors;
 	var id = inId;
 	var name = name;
 	var inspectionEventResourceId = null;
@@ -2189,6 +2191,7 @@ function deleteHotspotFromViewer(id){
 }
 
 function rollbackZoomifyAnnotationDisplay() {
+	var hotSpotColors = appConfig["TransmissionLine"][authUserOrgKey].colors;
 	var data = rollbackInspectionData;
 	
 	dijit.byId('damageTypeDropdown').set('value', data.damageType);
@@ -2276,7 +2279,7 @@ function rollbackZoomifyAnnotationDisplay() {
                 return poly.severity;
             });
             var gridNodeSeverity = (severity.length > 0) ? _.max(severity) : 0;
-            rollbackOverviewGridSeverity(imageId, gridNodeSeverity);
+            //rollbackOverviewGridSeverity(imageId, gridNodeSeverity);
         });
     }, 500);
 	
@@ -2298,15 +2301,17 @@ function rollbackZoomifyAnnotationDisplay() {
 }
 
 function rollbackOverviewGridSeverity(imageId, gridNodeSeverity){
+	var hotSpotColors = appConfig["TransmissionLine"][authUserOrgKey].colors;
 	var gridNodeId = _.first(dojo.query("div[data-grid-image-id='" + imageId + "']"));;
-	dojo.style(gridNodeId, "backgroundColor",  severityColors[gridNodeSeverity]);
-	if (imageId !== getCurrentImage().id) {
-		dojo.style(gridNodeId, "borderColor",  severityColors[gridNodeSeverity]);
+	dojo.style(gridNodeId, "backgroundColor",  hotSpotColors[gridNodeSeverity]);
+	if (imageId !== getCurrentImage().resourceId) {
+		dojo.style(gridNodeId, "borderColor",  hotSpotColorss[gridNodeSeverity]);
 	}
 	dojo.attr(gridNodeId, "data-grid-severity", gridNodeSeverity);
 }
 
 function rollbackCurrentLabel(id) {
+	var hotSpotColors = appConfig["TransmissionLine"][authUserOrgKey].colors;
 	var data = getImageHotspotById(id);
 	if (data) {
 		Z.Viewport.modifyHotspot(id, 'X', data.center.X, true, false);
@@ -2516,7 +2521,7 @@ function populateInspectionEventImages(imageIds) {
 
 function highlightInspectionEventImage() {
     dojo.query(".imageInspectionEvent").removeClass("imageActive");
-	var gridNode = dojo.query("div[data-grid-status=on]");
+	var gridNode = dojo.byId(getCurrentImage().resourceId);
     if (gridNode.length > 0) {
 		var gridNodeId = gridNode[0].id;
 		var imageId = dojo.attr(gridNodeId, "data-grid-image-id");
